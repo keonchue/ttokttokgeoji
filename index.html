@@ -36,25 +36,10 @@ input,textarea{font-family:inherit;border:none;outline:none;color:inherit}
 /* 가로 모드 (데스크톱 전용) */
 @media (min-width:480px){
   .phone.landscape{
-    width:min(95vh,860px);
-    height:min(95vw,420px);
-    transform:rotate(-90deg);
-  }
-  .phone.tilting{
-    animation:tiltSpin 1s cubic-bezier(0.645,0.045,0.355,1);
+    width:min(88vh,860px);
+    height:min(55vh,420px);
   }
 }
-@keyframes tiltSpin{
-  0%{transform:rotate(0deg) rotateY(0deg)}
-  50%{transform:rotate(-45deg) rotateY(15deg) scale(0.92)}
-  100%{transform:rotate(-90deg) rotateY(0deg)}
-}
-@keyframes untiltSpin{
-  0%{transform:rotate(-90deg) rotateY(0deg)}
-  50%{transform:rotate(-45deg) rotateY(-15deg) scale(0.92)}
-  100%{transform:rotate(0deg) rotateY(0deg)}
-}
-.phone.untilting{animation:untiltSpin 1s cubic-bezier(0.645,0.045,0.355,1)}
 
 /* 회전 버튼 (데스크톱에서만 보임) */
 .rotate-btn{position:fixed;top:20px;right:20px;width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.95);box-shadow:var(--shadow-md);display:none;align-items:center;justify-content:center;z-index:500;color:var(--text);backdrop-filter:blur(10px);transition:transform .2s}
@@ -1950,14 +1935,8 @@ function initRotate(){
     if(!phone) return;
     if(isLandscape){
       phone.classList.remove('landscape');
-      phone.classList.add('untilting');
-      setTimeout(() => phone.classList.remove('untilting'), 1000);
     } else {
-      phone.classList.add('tilting');
-      setTimeout(() => {
-        phone.classList.remove('tilting');
-        phone.classList.add('landscape');
-      }, 500);
+      phone.classList.add('landscape');
     }
     isLandscape = !isLandscape;
   });
