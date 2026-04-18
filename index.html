@@ -1,0 +1,2085 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>똑똑거지 — 합리적 소비를 훈련하는 앱</title>
+<style>
+:root{
+  --bg:#F1EFE8; --surface:#FFFFFF; --surface-alt:#F7F5F0;
+  --border:rgba(0,0,0,0.08); --border-strong:rgba(0,0,0,0.15);
+  --text:#2C2C2A; --text-sub:#5F5E5A; --text-dim:#888780;
+  --primary:#378ADD; --primary-bg:#E6F1FB; --primary-text:#0C447C;
+  --accent:#BA7517; --accent-bg:#FAEEDA; --accent-text:#633806;
+  --success:#1D9E75; --success-bg:#E1F5EE; --success-text:#0F6E56;
+  --warn:#D85A30; --warn-bg:#FAECE7; --warn-text:#993C1D;
+  --danger:#E24B4A; --danger-bg:#FCEBEB; --danger-text:#791F1F;
+  --purple:#7F77DD; --purple-bg:#EEEDFE; --purple-text:#3C3489;
+  --teal:#1D9E75; --teal-bg:#E1F5EE;
+  --coin:#EF9F27;
+  --radius-sm:6px; --radius-md:10px; --radius-lg:16px; --radius-xl:22px;
+  --shadow-sm:0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg:0 12px 32px rgba(0,0,0,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",Pretendard,sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,textarea{font-family:inherit;border:none;outline:none;color:inherit}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+
+/* 앱 프레임 (데스크톱에선 모바일 프레임처럼 보이게) */
+.frame-wrap{width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#D3D1C7 0%,#F1EFE8 100%)}
+.phone{position:relative;width:min(100vw,420px);height:min(100vh,860px);background:var(--bg);overflow:hidden;display:flex;flex-direction:column}
+@media (min-width:480px){.phone{border-radius:36px;box-shadow:var(--shadow-lg),0 0 0 8px #2C2C2A,0 0 0 10px #444441}}
+
+.status-bar{height:28px;background:transparent;display:flex;justify-content:space-between;align-items:center;padding:0 20px;font-size:13px;font-weight:600;color:var(--text);flex-shrink:0}
+@media (max-width:479px){.status-bar{display:none}}
+
+.top-bar{height:48px;background:var(--bg);display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0;border-bottom:0.5px solid transparent;transition:border-color .2s}
+.top-bar.scrolled{border-bottom-color:var(--border)}
+.top-title{font-size:17px;font-weight:600}
+.top-actions{display:flex;gap:4px}
+.icon-btn{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text-sub);transition:background .15s}
+.icon-btn:hover{background:var(--border)}
+.icon-btn.sos{color:var(--danger-text);background:var(--danger-bg)}
+.icon-btn svg{width:18px;height:18px}
+
+/* 뷰 컨테이너 */
+.view{flex:1;overflow:hidden;position:relative}
+.view.hide{display:none}
+.scroll{height:100%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:120px}
+.scroll::-webkit-scrollbar{display:none}
+
+/* 하단 탭바 */
+.tab-bar{position:absolute;left:10px;right:10px;bottom:12px;height:60px;background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:0.5px solid var(--border);border-radius:22px;display:flex;align-items:center;box-shadow:var(--shadow-md);z-index:50}
+.tab-item{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--text-dim);transition:color .15s}
+.tab-item.active{color:var(--primary)}
+.tab-item svg{width:22px;height:22px}
+.tab-item span{font-size:10px;font-weight:500}
+
+/* FAB */
+.fab{position:absolute;right:18px;bottom:90px;width:56px;height:56px;border-radius:50%;background:var(--text);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-lg);z-index:45;transition:transform .2s}
+.fab:active{transform:scale(0.95)}
+.fab svg{width:24px;height:24px}
+.fab-pulse{position:absolute;inset:-4px;border:2px solid var(--text);border-radius:50%;opacity:0;animation:pulse 2.5s infinite}
+@keyframes pulse{0%{transform:scale(1);opacity:0.6}100%{transform:scale(1.3);opacity:0}}
+
+/* 공용 카드 */
+.card{background:var(--surface);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px;border:0.5px solid var(--border)}
+.card.flat{border-radius:var(--radius-md);background:var(--surface-alt);border:none}
+.card-title{font-size:15px;font-weight:600;margin-bottom:4px}
+.card-sub{font-size:12px;color:var(--text-sub);line-height:1.5}
+.section-title{font-size:13px;font-weight:600;color:var(--text-sub);letter-spacing:-0.2px;margin:20px 16px 10px;text-transform:uppercase}
+.section-title:first-child{margin-top:4px}
+
+/* ============== 온보딩 ============== */
+.onb{position:fixed;inset:0;background:var(--surface-alt);z-index:100;display:flex;flex-direction:column;padding:28px 24px 24px}
+.onb.hide{display:none}
+.onb-progress{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:32px;flex-shrink:0}
+.onb-progress-fill{height:100%;background:var(--primary);transition:width .4s cubic-bezier(0.34,1.4,0.64,1);width:0}
+.onb-body{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.onb-body::-webkit-scrollbar{display:none}
+.onb-step{display:none}
+.onb-step.active{display:flex;flex-direction:column;flex:1;animation:slideUp .4s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.onb-headline{font-size:24px;font-weight:700;line-height:1.3;margin-bottom:8px;letter-spacing:-0.5px}
+.onb-sub{font-size:14px;color:var(--text-sub);line-height:1.6;margin-bottom:24px}
+.onb-footer{padding-top:20px;display:flex;gap:10px;flex-shrink:0}
+.btn-primary{flex:1;height:52px;background:var(--text);color:#fff;border-radius:14px;font-size:15px;font-weight:600;transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-primary:disabled{opacity:0.3}
+.btn-ghost{height:52px;padding:0 20px;background:transparent;color:var(--text-sub);font-size:14px;font-weight:500}
+
+/* 가치관 설문 */
+.value-list{display:flex;flex-direction:column;gap:14px;margin:4px 0}
+.value-row{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px}
+.value-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;gap:10px}
+.value-name{font-size:15px;font-weight:600}
+.value-example{font-size:11px;color:var(--text-dim);margin-top:2px;font-weight:400}
+.value-num{font-size:18px;font-weight:700;color:var(--primary);min-width:36px;text-align:right}
+.value-slider{width:100%;height:30px;-webkit-appearance:none;background:transparent;cursor:pointer}
+.value-slider::-webkit-slider-runnable-track{height:5px;background:var(--border);border-radius:3px}
+.value-slider::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--primary);margin-top:-8.5px;box-shadow:0 2px 6px rgba(55,138,221,0.4)}
+.value-slider::-moz-range-track{height:5px;background:var(--border);border-radius:3px}
+.value-slider::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--primary);border:none}
+
+/* 관심 품목 선택 */
+.chip-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{padding:10px 16px;border-radius:100px;background:var(--surface);border:1px solid var(--border);font-size:14px;font-weight:500;color:var(--text-sub);transition:all .15s}
+.chip.selected{background:var(--primary-bg);border-color:var(--primary);color:var(--primary-text);font-weight:600}
+
+.name-input{width:100%;height:56px;background:var(--surface);border:1px solid var(--border-strong);border-radius:14px;padding:0 18px;font-size:16px;font-weight:500}
+.name-input:focus{border-color:var(--primary)}
+.name-hint{font-size:12px;color:var(--text-dim);margin-top:8px}
+
+/* ============== 홈 탭 ============== */
+.hero-char{background:var(--surface);border-radius:var(--radius-xl);padding:18px;margin:0 16px 14px;border:0.5px solid var(--border)}
+.hero-top{display:flex;gap:14px;align-items:center;margin-bottom:14px}
+.hero-avatar{width:76px;height:76px;background:var(--surface-alt);border-radius:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
+.hero-info{flex:1;min-width:0}
+.hero-stage{font-size:11px;color:var(--text-sub);font-weight:500;margin-bottom:2px}
+.hero-name{font-size:18px;font-weight:700;margin-bottom:4px;letter-spacing:-0.3px}
+.xp-wrap{display:flex;align-items:center;gap:8px}
+.xp-bar{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.xp-fill{height:100%;background:var(--primary);border-radius:3px;transition:width .6s cubic-bezier(0.34,1.3,0.64,1)}
+.xp-num{font-size:11px;color:var(--text-sub);font-weight:600;white-space:nowrap}
+.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.hstat{background:var(--surface-alt);border-radius:12px;padding:10px 8px;text-align:center}
+.hstat-label{font-size:10px;color:var(--text-sub);font-weight:500;margin-bottom:2px}
+.hstat-value{font-size:15px;font-weight:700}
+.hstat-sub{font-size:9px;color:var(--text-dim);margin-top:1px}
+
+/* 70건 카드 */
+.fact-card{background:linear-gradient(135deg,var(--purple-bg) 0%,#F5F0FC 100%);border-radius:var(--radius-lg);padding:16px;margin:0 16px 14px;display:flex;align-items:center;gap:14px}
+.fact-num{font-size:32px;font-weight:800;color:var(--purple-text);font-family:-apple-system,sans-serif;line-height:1}
+.fact-text{flex:1;font-size:12px;color:var(--purple-text);line-height:1.5}
+.fact-text b{font-weight:700}
+
+/* 미션 카드 */
+.mission-list{margin:0 16px 14px;display:flex;flex-direction:column;gap:8px}
+.mission{background:var(--surface);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;border:0.5px solid var(--border);transition:all .15s}
+.mission:active{transform:scale(0.98)}
+.mission.done{background:var(--success-bg);border-color:transparent}
+.mission-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
+.mission-body{flex:1;min-width:0}
+.mission-title{font-size:14px;font-weight:600;margin-bottom:2px}
+.mission.done .mission-title{text-decoration:line-through;opacity:0.6}
+.mission-xp{font-size:11px;color:var(--primary);font-weight:600}
+.mission-arrow{color:var(--text-dim);flex-shrink:0}
+.mission.done .mission-arrow{display:none}
+.mission.done .mission-xp{color:var(--success-text)}
+.mission-check{color:var(--success-text);display:none}
+.mission.done .mission-check{display:block}
+
+/* 추천 액션 (가치관 기반) */
+.reco-row{margin:0 0 14px;padding:0 16px}
+.reco-scroll{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px;margin:0 -16px;padding:0 16px}
+.reco-scroll::-webkit-scrollbar{display:none}
+.reco-card{flex-shrink:0;width:220px;background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:14px;scroll-snap-align:start}
+.reco-tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:6px;background:var(--primary-bg);color:var(--primary-text);font-weight:600;margin-bottom:6px}
+.reco-title{font-size:13px;font-weight:600;margin-bottom:4px;line-height:1.4}
+.reco-why{font-size:11px;color:var(--text-sub);line-height:1.5}
+
+/* ============== 피해대응 탭 ============== */
+.damage-cats{padding:0 16px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.dcat{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:16px 12px;display:flex;flex-direction:column;gap:8px;transition:all .15s}
+.dcat:active{transform:scale(0.97)}
+.dcat-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.dcat-title{font-size:13px;font-weight:600;line-height:1.35}
+.dcat-sub{font-size:10px;color:var(--text-sub)}
+
+/* 피해대응 상세 */
+.damage-detail{position:absolute;inset:0;background:var(--bg);z-index:60;display:none;flex-direction:column}
+.damage-detail.open{display:flex;animation:slideLeft .3s ease}
+@keyframes slideLeft{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+.detail-back{padding:8px 12px;flex-shrink:0;border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:10px;height:48px}
+.detail-back svg{width:20px;height:20px}
+.detail-title{font-size:15px;font-weight:600}
+.detail-content{flex:1;overflow-y:auto;padding:16px 16px 120px}
+.law-box{background:var(--accent-bg);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:16px}
+.law-label{font-size:11px;color:var(--accent-text);font-weight:600;margin-bottom:2px}
+.law-text{font-size:13px;color:var(--accent-text);line-height:1.55}
+.step-list{margin-bottom:16px}
+.step{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;transition:all .15s}
+.step.done{background:var(--success-bg);border-color:transparent}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--surface-alt);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-sub);flex-shrink:0;border:1px solid var(--border)}
+.step.done .step-num{background:var(--success);color:#fff;border-color:var(--success)}
+.step-text{font-size:13px;line-height:1.55;flex:1}
+.step.done .step-text{opacity:0.7}
+.contact-box{background:var(--primary-bg);border-radius:var(--radius-md);padding:14px;display:flex;flex-direction:column;gap:10px}
+.contact-title{font-size:12px;color:var(--primary-text);font-weight:600}
+.contact-btns{display:flex;gap:8px}
+.contact-btn{flex:1;height:40px;background:var(--surface);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:600;color:var(--primary-text);border:0.5px solid transparent}
+.contact-btn:active{background:var(--primary-bg)}
+
+/* ============== 도구 탭 ============== */
+.tool-card{margin:0 16px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:16px;position:relative}
+.tool-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.tool-title{font-size:15px;font-weight:600}
+.tool-badge{font-size:10px;padding:3px 8px;border-radius:6px;background:var(--purple-bg);color:var(--purple-text);font-weight:600}
+.tool-desc{font-size:12px;color:var(--text-sub);line-height:1.5;margin-bottom:14px}
+.tool-cta{width:100%;height:44px;background:var(--text);color:#fff;border-radius:12px;font-size:14px;font-weight:600}
+.tool-cta.ghost{background:var(--surface-alt);color:var(--text)}
+
+/* 비교 도구 */
+.cmp-view{position:absolute;inset:0;background:var(--bg);z-index:60;display:none;flex-direction:column}
+.cmp-view.open{display:flex}
+.cmp-content{flex:1;overflow-y:auto;padding:16px 16px 120px}
+.cmp-step{margin-bottom:20px}
+.cmp-label{font-size:12px;font-weight:600;color:var(--text-sub);margin-bottom:10px;text-transform:uppercase;letter-spacing:-0.2px}
+.cmp-input{width:100%;height:44px;background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:0 14px;font-size:14px;margin-bottom:8px}
+.cmp-attr{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:8px}
+.cmp-attr-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.cmp-attr-name{font-size:13px;font-weight:600}
+.cmp-attr-w{font-size:12px;color:var(--primary);font-weight:700}
+.cmp-auto-tag{font-size:9px;padding:1px 6px;background:var(--teal-bg);color:var(--success-text);border-radius:4px;font-weight:600;margin-left:6px}
+.cmp-prod{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:8px}
+.cmp-prod-name{font-size:13px;font-weight:600;margin-bottom:8px}
+.cmp-rate{display:grid;grid-template-columns:70px 1fr 24px;gap:8px;align-items:center;margin:6px 0;font-size:12px}
+.cmp-rate input{width:100%;height:4px}
+.cmp-rate input::-webkit-slider-thumb{width:14px;height:14px;margin-top:-5px}
+.cmp-result-card{background:var(--primary-bg);border-radius:var(--radius-md);padding:14px;margin-bottom:8px;border:2px solid var(--primary)}
+.cmp-result-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.cmp-result-head .name{font-size:14px;font-weight:700;color:var(--primary-text)}
+.cmp-result-head .score{font-size:18px;font-weight:800;color:var(--primary-text)}
+.cmp-result-bar{display:grid;grid-template-columns:50px 1fr 24px;gap:6px;font-size:11px;color:var(--primary-text);margin:3px 0;align-items:center}
+.cmp-result-fill{height:4px;background:rgba(12,68,124,0.2);border-radius:2px;overflow:hidden}
+.cmp-result-fill>div{height:100%;background:var(--primary-text);border-radius:2px}
+.cmp-loser{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:8px}
+.cmp-loser-head{display:flex;justify-content:space-between;font-size:13px;color:var(--text-sub)}
+.cmp-loser-head .name{font-weight:500}
+
+/* ============== 나의 거지 탭 ============== */
+.me-hero{background:linear-gradient(135deg,var(--primary-bg) 0%,#F0F7FF 100%);border-radius:var(--radius-xl);padding:24px 20px;margin:0 16px 14px;text-align:center}
+.me-avatar-big{width:120px;height:120px;background:var(--surface);border-radius:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;box-shadow:var(--shadow-sm)}
+.me-name{font-size:20px;font-weight:700;margin-bottom:2px}
+.me-stage{font-size:12px;color:var(--text-sub);margin-bottom:14px}
+.me-xp-bar{background:rgba(0,0,0,0.08);height:8px;border-radius:4px;overflow:hidden;margin-bottom:8px}
+.me-xp-bar>div{height:100%;background:var(--primary);border-radius:4px;transition:width .6s}
+.me-xp-text{font-size:11px;color:var(--text-sub);font-weight:500}
+
+.me-tabs{display:flex;gap:6px;margin:0 16px 10px;padding:4px;background:var(--surface-alt);border-radius:10px}
+.me-tab{flex:1;padding:8px 4px;text-align:center;font-size:12px;font-weight:600;color:var(--text-sub);border-radius:7px;transition:all .15s}
+.me-tab.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm)}
+
+.journal-entry{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;margin:0 16px 8px}
+.journal-date{font-size:10px;color:var(--text-dim);font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px}
+.journal-text{font-size:13px;line-height:1.6;color:var(--text);font-style:italic;font-family:"Apple SD Gothic Neo",Pretendard,sans-serif}
+
+.badge-grid{padding:0 16px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.badge{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-md);padding:14px 8px;text-align:center;opacity:0.35;filter:grayscale(1)}
+.badge.earned{opacity:1;filter:none}
+.badge-icon{width:44px;height:44px;border-radius:12px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--surface-alt)}
+.badge.earned .badge-icon{background:var(--accent-bg)}
+.badge-name{font-size:11px;font-weight:600;margin-bottom:2px}
+.badge-desc{font-size:9px;color:var(--text-sub);line-height:1.3}
+
+.stat-grid{padding:0 16px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.stat-box{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-md);padding:14px}
+.stat-num{font-size:22px;font-weight:800;line-height:1}
+.stat-lbl{font-size:11px;color:var(--text-sub);margin-top:4px;font-weight:500}
+.stat-delta{font-size:10px;font-weight:600;margin-top:2px}
+.stat-delta.up{color:var(--success-text)}
+
+/* ============== 모달 ============== */
+.modal-bg{position:absolute;inset:0;background:rgba(0,0,0,0.45);z-index:200;display:none;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .25s}
+.modal-bg.open{display:flex;opacity:1}
+.modal-bg.center{align-items:center}
+.modal-sheet{background:var(--surface);width:100%;max-height:85%;border-radius:20px 20px 0 0;padding:20px 20px 28px;transform:translateY(100%);transition:transform .35s cubic-bezier(0.34,1.2,0.64,1);display:flex;flex-direction:column}
+.modal-bg.open .modal-sheet{transform:translateY(0)}
+.modal-center{background:var(--surface);width:calc(100% - 40px);max-width:340px;border-radius:24px;padding:28px 24px;text-align:center;transform:scale(0.9);transition:transform .3s cubic-bezier(0.34,1.4,0.64,1)}
+.modal-bg.open .modal-center{transform:scale(1)}
+.modal-handle{width:36px;height:4px;background:var(--border-strong);border-radius:2px;margin:-8px auto 14px}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:8px}
+.modal-text{font-size:14px;color:var(--text-sub);line-height:1.6}
+
+/* 넛지 어록 모달 */
+.nudge-quote{font-size:22px;font-weight:600;line-height:1.5;margin:20px 0 16px;color:var(--text);letter-spacing:-0.3px}
+.nudge-source{font-size:11px;color:var(--text-dim);margin-bottom:24px;font-style:italic}
+.nudge-actions{display:flex;flex-direction:column;gap:8px}
+.nudge-btn{width:100%;height:48px;border-radius:12px;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.nudge-btn.hold{background:var(--text);color:#fff}
+.nudge-btn.buy{background:var(--surface-alt);color:var(--text-sub)}
+.nudge-btn.skip{background:transparent;color:var(--success-text);font-weight:600}
+
+/* 레벨업 모달 */
+.levelup-bang{font-size:12px;font-weight:700;color:var(--primary);letter-spacing:2px;margin-bottom:6px}
+.levelup-headline{font-size:28px;font-weight:800;margin-bottom:4px;letter-spacing:-0.5px}
+.levelup-new-name{color:var(--primary)}
+.levelup-avatar{width:140px;height:140px;margin:16px auto;background:var(--surface-alt);border-radius:28px;display:flex;align-items:center;justify-content:center}
+.levelup-quote{font-size:13px;color:var(--text-sub);line-height:1.6;margin:14px 0 20px;font-style:italic;padding:0 8px}
+
+/* AI 챗 모달 */
+.ai-head{display:flex;align-items:center;gap:10px;padding-bottom:14px;border-bottom:0.5px solid var(--border);margin-bottom:12px}
+.ai-head .dot{width:10px;height:10px;border-radius:50%;background:var(--success)}
+.ai-head .title{font-size:15px;font-weight:600}
+.ai-head .sub{font-size:11px;color:var(--text-sub)}
+.ai-body{flex:1;overflow-y:auto;padding:4px 0;min-height:240px;max-height:340px}
+.ai-body::-webkit-scrollbar{display:none}
+.ai-msg{max-width:85%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.55;margin-bottom:8px;word-break:break-word}
+.ai-msg.bot{background:var(--surface-alt);border-bottom-left-radius:4px}
+.ai-msg.user{background:var(--primary);color:#fff;border-bottom-right-radius:4px;margin-left:auto}
+.ai-msg.typing{display:flex;gap:4px;width:auto}
+.ai-msg.typing span{width:6px;height:6px;border-radius:50%;background:var(--text-dim);animation:typing 1.2s infinite}
+.ai-msg.typing span:nth-child(2){animation-delay:0.2s}
+.ai-msg.typing span:nth-child(3){animation-delay:0.4s}
+@keyframes typing{0%,60%,100%{transform:translateY(0);opacity:0.4}30%{transform:translateY(-5px);opacity:1}}
+.ai-prompts{display:flex;gap:6px;padding-top:12px;border-top:0.5px solid var(--border);overflow-x:auto}
+.ai-prompts::-webkit-scrollbar{display:none}
+.ai-prompt{flex-shrink:0;padding:8px 14px;background:var(--surface-alt);border-radius:100px;font-size:12px;font-weight:500;color:var(--text-sub);white-space:nowrap}
+
+/* 결정 기록 모달 */
+.decide-item{background:var(--surface-alt);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.decide-name{font-size:13px;font-weight:600}
+.decide-score{font-size:12px;color:var(--text-sub)}
+.decide-radio{width:22px;height:22px;border:2px solid var(--border-strong);border-radius:50%;flex-shrink:0;transition:all .15s}
+.decide-item.selected{background:var(--primary-bg)}
+.decide-item.selected .decide-radio{background:var(--primary);border-color:var(--primary);position:relative}
+.decide-item.selected .decide-radio::after{content:"";position:absolute;inset:5px;background:#fff;border-radius:50%}
+
+/* 토스트 */
+.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--text);color:#fff;padding:10px 16px;border-radius:100px;font-size:13px;font-weight:600;z-index:300;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;max-width:90%;box-shadow:var(--shadow-md)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success{background:var(--success)}
+.toast.xp{background:var(--primary)}
+
+/* XP 팝 애니메이션 */
+.xp-pop{position:fixed;color:var(--primary);font-weight:800;font-size:24px;pointer-events:none;z-index:400;animation:xpFloat 1.2s ease-out forwards}
+
+/* DNA 리포트 */
+.dna-hero{background:linear-gradient(135deg,var(--primary-bg) 0%,#F0F7FF 100%);border-radius:var(--radius-lg);padding:18px;margin-bottom:14px;text-align:center}
+.dna-match{font-size:42px;font-weight:800;color:var(--primary-text);line-height:1;letter-spacing:-1px;margin:6px 0}
+.dna-match-label{font-size:12px;color:var(--primary-text);font-weight:600;opacity:0.8}
+.dna-sub{font-size:12px;color:var(--primary-text);margin-top:10px;line-height:1.5}
+.dna-section-title{font-size:13px;font-weight:600;color:var(--text-sub);margin:18px 0 8px;text-transform:uppercase;letter-spacing:-0.2px}
+.dna-bar-row{display:grid;grid-template-columns:80px 1fr;gap:10px;align-items:center;margin:8px 0;font-size:12px}
+.dna-bar-row .name{font-weight:500}
+.dna-bar-stack{position:relative;height:22px;background:var(--surface-alt);border-radius:6px;overflow:hidden}
+.dna-bar-expect{position:absolute;inset:0;background:var(--primary-bg);border-radius:6px}
+.dna-bar-actual{position:absolute;top:0;bottom:0;left:0;background:var(--primary);border-radius:6px;display:flex;align-items:center;padding-left:6px;font-size:10px;font-weight:700;color:#fff;transition:width 0.8s cubic-bezier(0.34,1.3,0.64,1)}
+.dna-bar-gap{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:600;color:var(--primary-text)}
+.dna-insight{background:var(--accent-bg);border-radius:var(--radius-md);padding:12px 14px;font-size:12px;color:var(--accent-text);line-height:1.55;margin-top:12px}
+.dna-insight b{color:var(--accent-text);font-weight:700}
+.dna-pattern{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start}
+.dna-pattern .ico{width:36px;height:36px;border-radius:10px;background:var(--surface-alt);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.dna-pattern .body{flex:1}
+.dna-pattern .title{font-size:13px;font-weight:600;margin-bottom:2px}
+.dna-pattern .desc{font-size:11px;color:var(--text-sub);line-height:1.5}
+
+/* 후회 로그 */
+.regret-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.regret-sbox{background:var(--surface-alt);border-radius:var(--radius-md);padding:12px 8px;text-align:center}
+.regret-snum{font-size:20px;font-weight:700;line-height:1}
+.regret-slbl{font-size:10px;color:var(--text-sub);margin-top:4px}
+.regret-item{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-md);padding:14px;margin-bottom:10px}
+.regret-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;gap:8px}
+.regret-choice{font-size:14px;font-weight:600}
+.regret-date{font-size:10px;color:var(--text-dim);white-space:nowrap}
+.regret-ctx{font-size:11px;color:var(--text-sub);margin-bottom:10px;line-height:1.5}
+.regret-q{font-size:12px;color:var(--text);margin-bottom:8px;padding:8px 12px;background:var(--surface-alt);border-radius:8px;line-height:1.5}
+.regret-rate{display:flex;gap:6px;flex-wrap:wrap}
+.regret-rate-btn{flex:1;min-width:80px;height:40px;border-radius:10px;font-size:12px;font-weight:500;background:var(--surface-alt);color:var(--text-sub);border:1px solid transparent;transition:all .15s;padding:0 8px}
+.regret-rate-btn:active{transform:scale(0.97)}
+.regret-rate-btn.good{background:var(--success-bg);color:var(--success-text);border-color:var(--success)}
+.regret-rate-btn.bad{background:var(--danger-bg);color:var(--danger-text);border-color:var(--danger)}
+.regret-rated{font-size:12px;padding:8px 12px;border-radius:8px;font-weight:500;text-align:center}
+.regret-rated.good{background:var(--success-bg);color:var(--success-text)}
+.regret-rated.bad{background:var(--danger-bg);color:var(--danger-text)}
+.regret-empty{text-align:center;padding:40px 20px;color:var(--text-sub);font-size:13px;line-height:1.6}
+.regret-empty b{display:block;font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px}
+@keyframes xpFloat{0%{transform:translateY(0);opacity:0}20%{opacity:1}100%{transform:translateY(-80px);opacity:0}}
+
+/* 유틸 */
+.hide{display:none !important}
+.spacer{height:12px}
+</style>
+</head>
+<body>
+<div class="frame-wrap">
+<div class="phone">
+
+<!-- 상단 노치/스테이터스 -->
+<div class="status-bar">
+  <span id="clock">9:41</span>
+  <span>● ● ●</span>
+</div>
+
+<!-- 상단바 -->
+<div class="top-bar" id="topBar">
+  <div class="top-title" id="topTitle">홈</div>
+  <div class="top-actions">
+    <button class="icon-btn" onclick="showToast('검색 — 데모에서는 비활성','info')" aria-label="검색">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    </button>
+    <button class="icon-btn" onclick="showToast('알림 0건','info')" aria-label="알림">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8z"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>
+    </button>
+    <button class="icon-btn sos" onclick="triggerSOS()" aria-label="긴급 SOS">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M12 2l2.5 7H22l-6 4.5 2.5 7L12 16l-6.5 4.5L8 13.5 2 9h7.5z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- 메인 뷰 (탭별) -->
+<div class="view" id="mainView">
+  <!-- 홈 -->
+  <div class="scroll tab-content" id="tab-home">
+    <div id="heroChar"></div>
+    <div class="fact-card">
+      <div class="fact-num">70</div>
+      <div class="fact-text"><b>하루 평균 소비 관련 의사결정</b><br>지금까지 이 중 <b id="decideCount">0건</b>을 이 앱과 함께 처리했어요.</div>
+    </div>
+    <div class="section-title">오늘의 미션</div>
+    <div class="mission-list" id="missionList"></div>
+    <div class="section-title">당신의 가치관에 맞는 추천</div>
+    <div class="reco-row"><div class="reco-scroll" id="recoScroll"></div></div>
+    <div class="section-title">마지막 활동</div>
+    <div class="card" style="margin:0 16px 14px" id="lastActivity">
+      <div class="card-sub">아직 기록이 없어요. 미션을 완료해 보세요.</div>
+    </div>
+  </div>
+
+  <!-- 피해대응 -->
+  <div class="scroll tab-content hide" id="tab-damage">
+    <div style="padding:20px 16px 6px">
+      <div style="font-size:22px;font-weight:700;line-height:1.3">피해 상황에<br>대응하세요</div>
+      <div style="font-size:13px;color:var(--text-sub);margin-top:6px;line-height:1.5">카테고리를 선택하면 권리·절차·연락처를 순서대로 안내합니다.</div>
+    </div>
+    <div class="section-title">상황 선택</div>
+    <div class="damage-cats" id="damageCats"></div>
+    <div class="section-title">진행 중인 사건</div>
+    <div id="caseList" style="padding:0 16px"></div>
+    <div class="spacer"></div>
+  </div>
+
+  <!-- 도구 -->
+  <div class="scroll tab-content hide" id="tab-tools">
+    <div style="padding:20px 16px 6px">
+      <div style="font-size:22px;font-weight:700;line-height:1.3">결정하기 전에,<br>3분만 써보세요</div>
+      <div style="font-size:13px;color:var(--text-sub);margin-top:6px;line-height:1.5">당신의 가치관이 비교의 기본값으로 자동 반영돼요.</div>
+    </div>
+    <div class="section-title">메인 도구</div>
+    <div class="tool-card">
+      <div class="tool-head"><div class="tool-title">다속성 태도 모델 비교</div><span class="tool-badge">+30 XP</span></div>
+      <div class="tool-desc">가격·품질·디자인·AS 등 속성을 가중치로 평가해 최적의 선택을 찾아요. Ao = Σ(중요도 × 평가)</div>
+      <button class="tool-cta" onclick="openCompare()">비교 시작</button>
+    </div>
+    <div class="tool-card">
+      <div class="tool-head"><div class="tool-title">24시간 장바구니 락</div><span class="tool-badge">+25 XP</span></div>
+      <div class="tool-desc">사고 싶은 걸 적어 두세요. 24시간 후 다시 물어볼게요 — "그래도 사고 싶나요?"</div>
+      <button class="tool-cta ghost" onclick="openLock()">충동 저항 시작</button>
+    </div>
+    <div class="tool-card">
+      <div class="tool-head"><div class="tool-title">가계부 + 영수증 OCR</div><span class="tool-badge" style="background:var(--surface-alt);color:var(--text-sub)">V1 예정</span></div>
+      <div class="tool-desc">영수증을 찍으면 품목·금액 자동 분류. 지출 패턴과 가치관 일치도를 보여드려요.</div>
+      <button class="tool-cta ghost" onclick="showToast('V1에 추가 예정','info')" disabled style="opacity:0.5">준비 중</button>
+    </div>
+    <div class="tool-card">
+      <div class="tool-head"><div class="tool-title">소비 DNA 리포트</div><span class="tool-badge">주 1회 +40 XP</span></div>
+      <div class="tool-desc">당신의 가치관 설정 vs 실제 소비 결정을 비교. 직관이 얼마나 훈련됐는지 숫자로 확인해요.</div>
+      <button class="tool-cta" onclick="openDNAReport()">리포트 보기</button>
+    </div>
+    <div class="tool-card">
+      <div class="tool-head"><div class="tool-title">후회 로그</div><span class="tool-badge">응답 +20 XP</span></div>
+      <div class="tool-desc">과거 결정을 돌아보고 만족도를 평가해요. 이 데이터가 다음 결정의 직관을 만듭니다.</div>
+      <button class="tool-cta ghost" onclick="openRegretLog()">돌아보러 가기</button>
+    </div>
+    <div class="spacer"></div>
+  </div>
+
+  <!-- 나의 거지 -->
+  <div class="scroll tab-content hide" id="tab-me">
+    <div id="meHero"></div>
+    <div class="me-tabs">
+      <button class="me-tab active" data-metab="journal">성장 일기</button>
+      <button class="me-tab" data-metab="badges">업적</button>
+      <button class="me-tab" data-metab="stats">통계</button>
+    </div>
+    <div id="meContent"></div>
+    <div class="spacer"></div>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fabBtn" aria-label="AI 소비 상담">
+  <span class="fab-pulse"></span>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><circle cx="9" cy="10" r="0.5" fill="currentColor"/><circle cx="13" cy="10" r="0.5" fill="currentColor"/><circle cx="17" cy="10" r="0.5" fill="currentColor"/></svg>
+</button>
+
+<!-- 하단 탭바 -->
+<div class="tab-bar">
+  <button class="tab-item active" data-tab="home" aria-label="홈">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
+    <span>홈</span>
+  </button>
+  <button class="tab-item" data-tab="damage" aria-label="피해대응">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l9 4v6c0 5-3.5 9-9 10-5.5-1-9-5-9-10V6z"/></svg>
+    <span>피해대응</span>
+  </button>
+  <button class="tab-item" data-tab="tools" aria-label="도구">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 4l6 6-8 8-4-4z"/><path d="M4 20l4-1-3-3z"/></svg>
+    <span>도구</span>
+  </button>
+  <button class="tab-item" data-tab="me" aria-label="나의 거지">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M3 21c0-5 4-8 9-8s9 3 9 8"/></svg>
+    <span>나의 거지</span>
+  </button>
+</div>
+
+<!-- 온보딩 오버레이 -->
+<div class="onb" id="onboarding">
+  <div class="onb-progress"><div class="onb-progress-fill" id="onbFill"></div></div>
+  <div class="onb-body">
+    <!-- Step 0: 환영 -->
+    <div class="onb-step active" data-step="0">
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:18px">
+        <div id="onbWelcomeChar"></div>
+        <div>
+          <div class="onb-headline">안녕, 나는 거지야.</div>
+          <div class="onb-sub">합리적으로 소비할 때마다 내가 성장해.<br>우리 같이 "생각하는 습관"을 만들어보자.</div>
+        </div>
+      </div>
+    </div>
+    <!-- Step 1: 이름 -->
+    <div class="onb-step" data-step="1">
+      <div class="onb-headline">나한테 이름을 지어줘.</div>
+      <div class="onb-sub">9개월간 같이 성장할 캐릭터의 이름이야. 나중에 바꿀 수 있어.</div>
+      <input type="text" class="name-input" id="charNameInput" placeholder="예: 똘이, 곰돌이, 거지왕" maxlength="10">
+      <div class="name-hint">한글·영문 최대 10자</div>
+    </div>
+    <!-- Step 2: 가치관 설문 -->
+    <div class="onb-step" data-step="2">
+      <div class="onb-headline">뭘 중요하게 생각해?</div>
+      <div class="onb-sub">각 가치가 당신에게 얼마나 중요한지 알려줘. 이게 앱 전체의 추천·비교 기본값이 돼.</div>
+      <div class="value-list" id="valueList"></div>
+    </div>
+    <!-- Step 3: 관심 품목 -->
+    <div class="onb-step" data-step="3">
+      <div class="onb-headline">어떤 걸 자주 사?</div>
+      <div class="onb-sub">관심 품목 3~6개 선택. 이 카테고리의 소비를 우선 도와드려요.</div>
+      <div class="chip-grid" id="chipGrid"></div>
+    </div>
+    <!-- Step 4: 완료 -->
+    <div class="onb-step" data-step="4">
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:18px">
+        <div id="onbDoneChar"></div>
+        <div>
+          <div class="onb-headline">준비 끝!</div>
+          <div class="onb-sub" id="onbDoneSub">매번 신중하게 생각하라고<br>잔소리하는 앱이 아니야.<br><br>합리적 선택이 당신의 직관이 될 때까지<br>조용히 옆에서 훈련시켜줄게.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="onb-footer">
+    <button class="btn-ghost hide" id="onbBack">뒤로</button>
+    <button class="btn-primary" id="onbNext">시작하기</button>
+  </div>
+</div>
+
+<!-- 모달들 -->
+<!-- 넛지 어록 -->
+<div class="modal-bg center" id="modalNudge">
+  <div class="modal-center">
+    <div style="font-size:11px;color:var(--text-dim);letter-spacing:1.5px;font-weight:600">잠깐</div>
+    <div class="nudge-quote" id="nudgeQuote">"할인율은 당신이 살 확률이다."</div>
+    <div class="nudge-source" id="nudgeSource">— 행동경제학이 일관되게 말하는 것</div>
+    <div class="nudge-actions">
+      <button class="nudge-btn hold" onclick="handleNudge('hold')">24시간만 기다려볼게</button>
+      <button class="nudge-btn buy" onclick="handleNudge('buy')">그래도 지금 살래</button>
+      <button class="nudge-btn skip" onclick="handleNudge('skip')">안 살래, 고마워</button>
+    </div>
+  </div>
+</div>
+
+<!-- 레벨업 -->
+<div class="modal-bg center" id="modalLevelup">
+  <div class="modal-center">
+    <div class="levelup-bang">★ LEVEL UP ★</div>
+    <div class="levelup-headline"><span class="levelup-new-name" id="luName">알바 거지</span><br><span style="font-size:14px;font-weight:500;color:var(--text-sub)">Lv.<span id="luLevel">3</span></span></div>
+    <div class="levelup-avatar" id="luAvatar"></div>
+    <div class="levelup-quote" id="luQuote">"편의점 알바 구했다. 첫 월급 나오면 다속성 점수 제일 높았던 C 살 거야."</div>
+    <button class="btn-primary" onclick="closeModal('modalLevelup')">계속하기</button>
+  </div>
+</div>
+
+<!-- AI 챗 -->
+<div class="modal-bg" id="modalAI">
+  <div class="modal-sheet" style="height:80vh">
+    <div class="modal-handle"></div>
+    <div class="ai-head">
+      <div class="dot"></div>
+      <div>
+        <div class="title">AI 소비 상담사</div>
+        <div class="sub" id="aiSub">당신의 가치관 데이터를 참고해 답해요</div>
+      </div>
+      <button class="icon-btn" onclick="closeModal('modalAI')" style="margin-left:auto">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="ai-body" id="aiBody"></div>
+    <div class="ai-prompts" id="aiPrompts"></div>
+  </div>
+</div>
+
+<!-- 피해대응 상세 -->
+<div class="damage-detail" id="damageDetail">
+  <div class="detail-back">
+    <button class="icon-btn" onclick="closeDamage()" aria-label="뒤로">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="detail-title" id="damageTitle"></div>
+  </div>
+  <div class="detail-content" id="damageContent"></div>
+</div>
+
+<!-- 비교 도구 뷰 -->
+<div class="cmp-view" id="cmpView">
+  <div class="detail-back">
+    <button class="icon-btn" onclick="closeCompare()" aria-label="뒤로">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="detail-title">다속성 비교</div>
+  </div>
+  <div class="cmp-content" id="cmpContent"></div>
+</div>
+
+<!-- 24시간 락 -->
+<div class="modal-bg" id="modalLock">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">24시간 후에 다시 생각하기</div>
+    <div class="modal-text" style="margin-bottom:16px">충동구매 욕구의 대부분은 24시간 안에 사라진다는 연구 결과가 있어요. 뭘 사려고 했는지 적어두세요.</div>
+    <input type="text" class="cmp-input" id="lockItem" placeholder="예: 10만원 스웨터" style="margin-bottom:12px">
+    <input type="number" class="cmp-input" id="lockPrice" placeholder="가격 (원)" style="margin-bottom:16px">
+    <button class="btn-primary" onclick="confirmLock()">장바구니에 잠금</button>
+  </div>
+</div>
+
+<!-- 결정 기록 -->
+<div class="modal-bg" id="modalDecide">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">어떤 걸 선택할래요?</div>
+    <div class="modal-text" style="margin-bottom:16px">이 결정을 기록해두면 3개월 후에 만족도를 물어봐요. 본인 직관을 훈련하는 데이터가 됩니다.</div>
+    <div id="decideList" style="margin-bottom:16px"></div>
+    <button class="btn-primary" id="decideConfirm" disabled>이걸로 결정</button>
+  </div>
+</div>
+
+<!-- SOS -->
+<div class="modal-bg center" id="modalSOS">
+  <div class="modal-center">
+    <div style="font-size:11px;color:var(--danger-text);letter-spacing:2px;font-weight:700;margin-bottom:6px">EMERGENCY</div>
+    <div style="font-size:22px;font-weight:700;margin-bottom:6px">무슨 일이세요?</div>
+    <div style="font-size:13px;color:var(--text-sub);line-height:1.5;margin-bottom:16px">지금 진행 중이라면 가장 빠른 연결을 드릴게요.</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="nudge-btn" style="background:var(--danger-bg);color:var(--danger-text)" onclick="sosAction('scam')">보이스피싱·사기 — 112</button>
+      <button class="nudge-btn" style="background:var(--warn-bg);color:var(--warn-text)" onclick="sosAction('hack')">계정 해킹 — 118</button>
+      <button class="nudge-btn" style="background:var(--primary-bg);color:var(--primary-text)" onclick="sosAction('general')">일반 소비자 피해 — 1372</button>
+      <button class="nudge-btn skip" onclick="closeModal('modalSOS')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 소비 DNA 리포트 -->
+<div class="modal-bg" id="modalDNA">
+  <div class="modal-sheet" style="max-height:90%">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div>
+        <div class="modal-title" style="margin-bottom:2px">소비 DNA 리포트</div>
+        <div style="font-size:11px;color:var(--text-sub)">당신의 가치관 vs 실제 결정</div>
+      </div>
+      <button class="icon-btn" onclick="closeModal('modalDNA')" aria-label="닫기">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div style="overflow-y:auto;flex:1" id="dnaContent"></div>
+  </div>
+</div>
+
+<!-- 후회 로그 -->
+<div class="modal-bg" id="modalRegret">
+  <div class="modal-sheet" style="max-height:90%">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div>
+        <div class="modal-title" style="margin-bottom:2px">후회 로그</div>
+        <div style="font-size:11px;color:var(--text-sub)">과거 결정 돌아보기</div>
+      </div>
+      <button class="icon-btn" onclick="closeModal('modalRegret')" aria-label="닫기">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div style="overflow-y:auto;flex:1" id="regretContent"></div>
+  </div>
+</div>
+
+<!-- 토스트 -->
+<div class="toast" id="toast"></div>
+
+</div></div>
+
+<script>
+/* ============================================================
+   상태 & 데이터
+============================================================ */
+const state = {
+  onboarded: false,
+  profile: {
+    charName: '거지',
+    values: { price:7, time:5, quality:5, health:5, eco:3, experience:5 },
+    interests: []
+  },
+  character: {
+    level: 1, xp: 0, streak: 0, lastActive: null
+  },
+  counters: {
+    decisions: 0, saved: 0, impulseResisted: 0, comparisons: 0
+  },
+  xpLog: [],
+  journal: [],
+  badges: new Set(),
+  cases: [],
+  locks: [],
+  decisions: [],
+  dnaLastClaim: 0
+};
+
+const VALUE_AXES = [
+  { key:'price', name:'가격 절약', ex:'돈 적게 쓰는 게 최우선', color:'#378ADD' },
+  { key:'time', name:'시간 효율', ex:'빨리 끝나는 게 최고', color:'#D85A30' },
+  { key:'quality', name:'품질·내구성', ex:'오래 쓰는 게 남는 거', color:'#7F77DD' },
+  { key:'health', name:'건강·안전', ex:'몸에 좋은 게 우선', color:'#1D9E75' },
+  { key:'eco', name:'친환경·윤리', ex:'지구와 사회를 위해', color:'#639922' },
+  { key:'experience', name:'경험·가치', ex:'의미 있는 소비가 최고', color:'#BA7517' }
+];
+
+const INTEREST_POOL = [
+  '식료품','외식','카페·음료','간편식','건강식품',
+  '의류','신발','화장품','가방·잡화',
+  '가전제품','가구·인테리어','생활용품','세제·욕실용품',
+  '디지털기기','앱·구독 서비스','책·콘텐츠',
+  '운동·헬스용품','여행','문화생활','반려동물용품'
+];
+
+const STAGES = [
+  { level:1, name:'노숙 거지', threshold:0, body:'#888780', hat:null, acc:'sign',
+    quote:'통장도 비었고 옷도 찢어졌다. 근데 적어도 한 번은 제대로 살아보자.' },
+  { level:2, name:'구걸 거지', threshold:50, body:'#BA7517', hat:'cap', acc:'sign',
+    quote:'푯말을 만들었다. 오늘 처음으로 "환불 요구할 권리"라는 게 있다는 걸 알았다.' },
+  { level:3, name:'알바 거지', threshold:200, body:'#639922', hat:'cap', acc:'apron',
+    quote:'편의점 알바 구했다. 첫 월급 나오면 다속성 점수 제일 높았던 C 살 거야.' },
+  { level:4, name:'월급쟁이', threshold:500, body:'#378ADD', hat:null, acc:'tie',
+    quote:'구독 5개 정리했더니 월 4만원이 남았다. 넷플·왓챠 둘 다 보지도 않으면서 왜 냈지.' },
+  { level:5, name:'투자자', threshold:1200, body:'#1D9E75', hat:null, acc:'coin',
+    quote:'오늘 10만원짜리 옷 24시간 참았다가 안 샀다. 대신 그 돈을 ETF에 넣었다. 묘하게 더 뿌듯하다.' },
+  { level:6, name:'부자', threshold:3000, body:'#D85A30', hat:'top', acc:'coin',
+    quote:'돈이 모였는데도 예전만큼 안 쓴다. 비싼 게 좋은 거 아니란 걸 알아버렸으니까.' },
+  { level:7, name:'소비의 달인', threshold:8000, body:'#7F77DD', hat:'crown', acc:'gold',
+    quote:'이제 돈은 도구다. 내가 돈을 쫓는 게 아니라 돈이 나를 따라온다.' }
+];
+
+const XP_RULES = {
+  guide_read:      { amount:20, name:'피해대응 가이드 학습' },
+  case_step:       { amount:5,  name:'피해대응 단계 완료' },
+  comparison_done: { amount:30, name:'다속성 비교 완료' },
+  decision_record: { amount:50, name:'결정 기록 완료' },
+  ai_chat:         { amount:15, name:'AI 상담 대화' },
+  impulse_resist:  { amount:25, name:'충동 구매 저항' },
+  value_purchase:  { amount:25, name:'가치 있는 소비' },
+  daily_login:     { amount:10, name:'일일 출석' },
+  mission_done:    { amount:20, name:'미션 완료' },
+  dna_report:      { amount:40, name:'소비 DNA 리포트 수령' },
+  regret_review:   { amount:20, name:'후회 로그 돌아보기' }
+};
+
+const NUDGE_QUOTES = [
+  { q:'할인율은 당신이 살 확률이다.', s:'— 행동경제학의 앵커링 효과' },
+  { q:'필요해서 사는 게 아니라,\n살 수 있어서 필요해진다.', s:'— 소비사회의 역설' },
+  { q:'지금 이 순간 사지 않아도,\n내일도 살 수 있는 것이다.', s:'— 희소성 편향 해체' },
+  { q:'광고는 당신에게 결핍을 만든 뒤\n해결책을 판다.', s:'— 갈브레이스, 풍요한 사회' },
+  { q:'이걸 사려고 포기하는 3가지는\n무엇인가?', s:'— 기회비용 프레임' }
+];
+
+const CASE_CATEGORIES = [
+  { key:'refund', icon:'💸', bg:'#FAECE7', title:'환불 거부', sub:'변심·하자·약속 미이행',
+    law:'소비자기본법 — 단순변심은 수령 후 7일, 하자는 3개월 이내 환불 가능',
+    steps:[
+      '사업자에 서면(문자·이메일)으로 환불 요청 및 기록 보관',
+      '거부 시 한국소비자원 1372 전화 상담',
+      '소비자분쟁해결기준에 따라 조정 신청',
+      '미해결 시 민사 소액사건 소송 (3천만원 이하 간이절차)'
+    ],
+    contact:'한국소비자원', phone:'1372', url:'https://www.ccn.go.kr' },
+  { key:'defect', icon:'🔧', bg:'#E6F1FB', title:'제품 하자·AS', sub:'결함·불량·서비스 불이행',
+    law:'민법 제580조 하자담보책임 + 제조물책임법',
+    steps:[
+      '수령 직후 사진·영상으로 증거 확보 (개봉 과정 포함)',
+      '품목별 보상기준 확인 후 교환·환불 요청',
+      '거부 시 한국소비자원 피해구제 신청',
+      '중대한 결함·안전 문제는 공정거래위원회 병행 신고'
+    ],
+    contact:'한국소비자원', phone:'1372', url:'https://www.ccn.go.kr' },
+  { key:'sub', icon:'🔄', bg:'#EEEDFE', title:'구독 해지 불가', sub:'다크패턴·복잡한 경로',
+    law:'전자상거래법상 청약철회권 + 공정위 다크패턴 규제',
+    steps:[
+      '해지 시도 모든 화면을 시간과 함께 캡처',
+      '고객센터에 서면(이메일)으로 해지 통보',
+      '공정거래위원회 다크패턴 신고 (1357)',
+      '카드사 매출 취소·이의제기 병행'
+    ],
+    contact:'공정거래위원회', phone:'1357', url:'https://www.ftc.go.kr' },
+  { key:'ship', icon:'📦', bg:'#E1F5EE', title:'배송·택배 분실', sub:'미배송·파손·오배송',
+    law:'상법 제135조 운송인 책임 + 전자상거래법',
+    steps:[
+      '송장번호·주문내역·파손사진 증거 확보',
+      '판매자에 우선 교환·재배송 요청',
+      '택배사 분실 신고 및 배상 접수',
+      '미해결 시 한국소비자원 1372 피해구제 신청'
+    ],
+    contact:'한국소비자원', phone:'1372', url:'https://www.ccn.go.kr' },
+  { key:'scam', icon:'🚨', bg:'#FCEBEB', title:'온라인 쇼핑 사기', sub:'입금 후 배송 없음',
+    law:'형법 제347조 사기죄 + 전자상거래법',
+    steps:[
+      '거래 내역·대화·입금증 즉시 캡처 보관',
+      '경찰청 사이버범죄 신고 (ECRM)',
+      '통신판매중개자에 보상 요청 (안전거래 미이용 시)',
+      '해외몰은 카드사 차지백 신청 (120일 이내)'
+    ],
+    contact:'경찰청 사이버', phone:'182', url:'https://ecrm.cyber.go.kr' },
+  { key:'privacy', icon:'🔐', bg:'#FAEEDA', title:'개인정보·해킹', sub:'계정 도용·정보 유출',
+    law:'개인정보보호법 + 정보통신망법',
+    steps:[
+      '모든 비밀번호 즉시 변경 (타 사이트 포함)',
+      '카드사 카드 정지·재발급 신청',
+      'KISA 118 신고 및 개인정보분쟁조정 신청',
+      '명의도용 징후 시 경찰 수사 의뢰'
+    ],
+    contact:'KISA 불법스팸대응센터', phone:'118', url:'https://www.kisa.or.kr' }
+];
+
+/* ============================================================
+   거지 캐릭터 SVG
+============================================================ */
+function avatarSVG(level, scale){
+  scale = scale || 1;
+  const s = STAGES[Math.min(level-1, STAGES.length-1)] || STAGES[0];
+  let hat='', acc='';
+  if(s.hat === 'cap') hat = '<rect x="34" y="19" width="12" height="5" fill="#633806" rx="1"/>';
+  else if(s.hat === 'top') hat = '<rect x="32" y="13" width="16" height="9" fill="#2C2C2A"/><rect x="28" y="21" width="24" height="2.5" fill="#2C2C2A"/>';
+  else if(s.hat === 'crown') hat = '<path d="M30 20 L34 14 L38 18 L42 12 L46 18 L50 14 L50 22 L30 22 Z" fill="#EF9F27"/><circle cx="40" cy="17" r="1.5" fill="#A32D2D"/>';
+
+  if(s.acc === 'sign') acc = '<rect x="33" y="58" width="14" height="8" fill="#F5F5DC" stroke="#633806" stroke-width="0.5"/><text x="40" y="64" font-size="4.5" text-anchor="middle" fill="#633806" font-weight="bold">도와주세요</text>';
+  else if(s.acc === 'apron') acc = '<rect x="32" y="48" width="16" height="18" fill="#F5F5DC" stroke="#5F5E5A" stroke-width="0.5"/><line x1="34" y1="52" x2="46" y2="52" stroke="#5F5E5A" stroke-width="0.3"/>';
+  else if(s.acc === 'tie') acc = '<path d="M40 44 L37 50 L40 60 L43 50 Z" fill="#791F1F"/>';
+  else if(s.acc === 'coin') acc = '<path d="M40 44 L37 50 L40 60 L43 50 Z" fill="#791F1F"/><circle cx="55" cy="56" r="5" fill="#EF9F27" stroke="#854F0B" stroke-width="0.5"/><text x="55" y="59" font-size="7" text-anchor="middle" fill="#854F0B" font-weight="bold">₩</text>';
+  else if(s.acc === 'gold') acc = '<path d="M40 44 L37 50 L40 60 L43 50 Z" fill="#EF9F27"/><circle cx="55" cy="56" r="5" fill="#EF9F27"/><circle cx="24" cy="56" r="5" fill="#EF9F27"/><circle cx="55" cy="56" r="5" fill="#EF9F27"/><text x="55" y="59" font-size="6" text-anchor="middle" fill="#854F0B" font-weight="bold">₩</text>';
+
+  const smile = level >= 4 ? 'M36 35 Q40 38 44 35' : 'M36 37 Q40 35 44 37';
+  const w = 80 * scale, h = 80 * scale;
+  return `<svg viewBox="0 0 80 80" width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="40" cy="30" r="11" fill="#F5C4B3"/>
+    ${hat}
+    <circle cx="36" cy="30" r="1.5" fill="#2C2C2A"/>
+    <circle cx="44" cy="30" r="1.5" fill="#2C2C2A"/>
+    <path d="${smile}" stroke="#2C2C2A" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <path d="M28 42 L52 42 L54 68 L26 68 Z" fill="${s.body}"/>
+    ${acc}
+  </svg>`;
+}
+
+/* ============================================================
+   초기화
+============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  renderOnboardingSteps();
+  initEvents();
+  // 데모: 바로 온보딩 노출
+  updateClock();
+  setInterval(updateClock, 30000);
+});
+
+function updateClock(){
+  const d = new Date();
+  const h = d.getHours(), m = d.getMinutes();
+  const el = document.getElementById('clock');
+  if(el) el.textContent = `${h}:${m.toString().padStart(2,'0')}`;
+}
+
+/* ============================================================
+   온보딩
+============================================================ */
+let onbIdx = 0;
+const ONB_STEPS = 5;
+
+function renderOnboardingSteps(){
+  document.getElementById('onbWelcomeChar').innerHTML = avatarSVG(1, 1.6);
+  document.getElementById('onbDoneChar').innerHTML = avatarSVG(2, 1.6);
+
+  const vl = document.getElementById('valueList');
+  vl.innerHTML = VALUE_AXES.map(v => `
+    <div class="value-row">
+      <div class="value-head">
+        <div>
+          <div class="value-name">${v.name}</div>
+          <div class="value-example">${v.ex}</div>
+        </div>
+        <div class="value-num" id="vn-${v.key}">${state.profile.values[v.key]}</div>
+      </div>
+      <input type="range" class="value-slider" min="0" max="10" step="1"
+        value="${state.profile.values[v.key]}" data-vkey="${v.key}">
+    </div>
+  `).join('');
+  vl.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const k = inp.dataset.vkey;
+      state.profile.values[k] = +inp.value;
+      document.getElementById('vn-'+k).textContent = inp.value;
+    });
+  });
+
+  const cg = document.getElementById('chipGrid');
+  cg.innerHTML = INTEREST_POOL.map(item => `<button class="chip" data-item="${item}">${item}</button>`).join('');
+  cg.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const item = chip.dataset.item;
+      if(state.profile.interests.includes(item)){
+        state.profile.interests = state.profile.interests.filter(i => i !== item);
+        chip.classList.remove('selected');
+      } else {
+        if(state.profile.interests.length >= 6){
+          showToast('최대 6개까지','info');
+          return;
+        }
+        state.profile.interests.push(item);
+        chip.classList.add('selected');
+      }
+      updateOnbNext();
+    });
+  });
+
+  document.getElementById('charNameInput').addEventListener('input', e => {
+    state.profile.charName = e.target.value.trim() || '거지';
+    updateOnbNext();
+  });
+}
+
+function showOnbStep(i){
+  document.querySelectorAll('.onb-step').forEach(s => s.classList.remove('active'));
+  document.querySelector(`.onb-step[data-step="${i}"]`).classList.add('active');
+  document.getElementById('onbFill').style.width = ((i+1)/ONB_STEPS*100)+'%';
+  document.getElementById('onbBack').classList.toggle('hide', i === 0);
+  const nextBtn = document.getElementById('onbNext');
+  nextBtn.textContent = i === ONB_STEPS-1 ? '앱 시작하기' : (i === 0 ? '시작하기' : '다음');
+  updateOnbNext();
+
+  if(i === 4){
+    document.getElementById('onbDoneSub').innerHTML =
+      `${state.profile.charName}(이)가 기다리고 있어요.<br><br>` +
+      `합리적 선택이 <b>당신의 직관</b>이 될 때까지<br>조용히 옆에서 훈련시켜줄게요.`;
+  }
+}
+
+function updateOnbNext(){
+  const btn = document.getElementById('onbNext');
+  let disabled = false;
+  if(onbIdx === 1) disabled = !document.getElementById('charNameInput').value.trim();
+  if(onbIdx === 3) disabled = state.profile.interests.length < 3;
+  btn.disabled = disabled;
+}
+
+function initEvents(){
+  document.getElementById('onbNext').addEventListener('click', () => {
+    if(onbIdx < ONB_STEPS-1){
+      onbIdx++;
+      showOnbStep(onbIdx);
+    } else {
+      completeOnboarding();
+    }
+  });
+  document.getElementById('onbBack').addEventListener('click', () => {
+    if(onbIdx > 0){ onbIdx--; showOnbStep(onbIdx); }
+  });
+
+  document.querySelectorAll('.tab-item').forEach(t => {
+    t.addEventListener('click', () => switchTab(t.dataset.tab));
+  });
+
+  document.getElementById('fabBtn').addEventListener('click', openAI);
+
+  document.querySelectorAll('.me-tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.me-tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      renderMeContent(t.dataset.metab);
+    });
+  });
+
+  document.querySelectorAll('.scroll').forEach(el => {
+    el.addEventListener('scroll', () => {
+      document.getElementById('topBar').classList.toggle('scrolled', el.scrollTop > 4);
+    });
+  });
+}
+
+function completeOnboarding(){
+  state.onboarded = true;
+  state.character.level = 1;
+  state.character.xp = 0;
+  state.character.lastActive = new Date().toDateString();
+  awardXP('daily_login');
+  addJournal(`${state.profile.charName}이(가) 세상에 나왔다. 아직 아무것도 없지만, 이제부터 하나씩 배워나갈 거야.`);
+  document.getElementById('onboarding').classList.add('hide');
+  renderAll();
+  setTimeout(() => showToast(`${state.profile.charName} 등장! 데모 시작해볼까요?`, 'success'), 400);
+}
+
+/* ============================================================
+   탭 전환
+============================================================ */
+const TAB_TITLES = { home:'홈', damage:'피해대응', tools:'도구', me:state.profile.charName };
+function switchTab(tab){
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hide'));
+  document.getElementById('tab-'+tab).classList.remove('hide');
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.getElementById('topTitle').textContent =
+    tab === 'me' ? state.profile.charName : TAB_TITLES[tab];
+  closeDamage(); closeCompare();
+}
+
+/* ============================================================
+   XP 엔진
+============================================================ */
+function awardXP(source, metaNote){
+  const rule = XP_RULES[source];
+  if(!rule) return;
+  const amt = rule.amount;
+  state.character.xp += amt;
+  state.counters.decisions += 1;
+  state.xpLog.unshift({
+    source, amount: amt, name: rule.name, at: Date.now(), note: metaNote
+  });
+  checkLevelUp();
+  checkBadges();
+  showXPPop(amt);
+}
+
+function checkLevelUp(){
+  const cur = state.character.level;
+  let newLv = 1;
+  for(let i = STAGES.length - 1; i >= 0; i--){
+    if(state.character.xp >= STAGES[i].threshold){ newLv = STAGES[i].level; break; }
+  }
+  if(newLv > cur){
+    state.character.level = newLv;
+    triggerLevelUp(newLv);
+  }
+  renderAll();
+}
+
+function triggerLevelUp(newLv){
+  const stage = STAGES[newLv-1];
+  document.getElementById('luName').textContent = stage.name;
+  document.getElementById('luLevel').textContent = newLv;
+  document.getElementById('luAvatar').innerHTML = avatarSVG(newLv, 1.6);
+  document.getElementById('luQuote').textContent = '"' + stage.quote + '"';
+  setTimeout(() => openModal('modalLevelup'), 300);
+  addJournal(`오늘 ${stage.name}(으)로 성장했다. "${stage.quote}"`, 'levelup');
+  awardBadge('levelup_' + newLv);
+}
+
+function showXPPop(amt){
+  const pop = document.createElement('div');
+  pop.className = 'xp-pop';
+  pop.textContent = '+' + amt + ' XP';
+  const rect = document.querySelector('.phone').getBoundingClientRect();
+  pop.style.left = (rect.left + rect.width/2 - 30) + 'px';
+  pop.style.top = (rect.top + rect.height/2) + 'px';
+  document.body.appendChild(pop);
+  setTimeout(() => pop.remove(), 1200);
+}
+
+/* ============================================================
+   업적 체크
+============================================================ */
+const BADGES = [
+  { id:'first_step',       icon:'🎯', name:'첫 발', desc:'앱에 온 첫날' },
+  { id:'first_compare',    icon:'⚖️', name:'첫 비교', desc:'다속성 비교 1회' },
+  { id:'first_damage',     icon:'🛡️', name:'권리 발견', desc:'피해대응 가이드 열람' },
+  { id:'impulse_master_5', icon:'🧘', name:'절제왕', desc:'충동 저항 5회' },
+  { id:'levelup_3',        icon:'☕', name:'알바 생활', desc:'Lv.3 도달' },
+  { id:'levelup_5',        icon:'📈', name:'투자 입문', desc:'Lv.5 도달' },
+  { id:'ai_chat_5',        icon:'💬', name:'상담 단골', desc:'AI 대화 5회' },
+  { id:'value_shop_3',     icon:'💚', name:'가치 있는 소비', desc:'의미 있는 지출 3회' },
+  { id:'compare_10',       icon:'🏆', name:'비교 장인', desc:'비교 10회' }
+];
+
+function awardBadge(id){
+  if(state.badges.has(id)) return;
+  state.badges.add(id);
+  const b = BADGES.find(x => x.id === id);
+  if(b) setTimeout(() => showToast(`🏅 업적: ${b.name}`, 'success'), 800);
+}
+
+function checkBadges(){
+  if(state.counters.decisions >= 1) awardBadge('first_step');
+  if(state.counters.comparisons >= 1) awardBadge('first_compare');
+  if(state.counters.comparisons >= 10) awardBadge('compare_10');
+  if(state.counters.impulseResisted >= 5) awardBadge('impulse_master_5');
+  const aiCount = state.xpLog.filter(l => l.source === 'ai_chat').length;
+  if(aiCount >= 5) awardBadge('ai_chat_5');
+  const valueBuys = state.xpLog.filter(l => l.source === 'value_purchase').length;
+  if(valueBuys >= 3) awardBadge('value_shop_3');
+}
+
+/* ============================================================
+   일기
+============================================================ */
+function addJournal(text, kind){
+  state.journal.unshift({ text, kind: kind||'action', at: Date.now() });
+}
+
+/* ============================================================
+   홈 렌더링
+============================================================ */
+function renderAll(){
+  renderHero();
+  renderMissions();
+  renderReco();
+  renderLastActivity();
+  renderDamageCats();
+  renderCaseList();
+  renderMeHero();
+  renderMeContent(currentMeTab);
+}
+
+function renderHero(){
+  const stage = STAGES[state.character.level-1];
+  const next = STAGES[state.character.level] || null;
+  const curMin = stage.threshold;
+  const nextMin = next ? next.threshold : curMin + 1000;
+  const pct = Math.min(100, Math.max(0, ((state.character.xp - curMin)/(nextMin - curMin))*100));
+
+  document.getElementById('heroChar').innerHTML = `
+    <div class="hero-char">
+      <div class="hero-top">
+        <div class="hero-avatar">${avatarSVG(state.character.level)}</div>
+        <div class="hero-info">
+          <div class="hero-stage">Lv.${state.character.level} · ${stage.name}</div>
+          <div class="hero-name">${state.profile.charName}</div>
+          <div class="xp-wrap">
+            <div class="xp-bar"><div class="xp-fill" style="width:${pct}%"></div></div>
+            <div class="xp-num">${state.character.xp} XP</div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-stats">
+        <div class="hstat"><div class="hstat-label">합리적 선택</div><div class="hstat-value">${state.counters.decisions}</div><div class="hstat-sub">건</div></div>
+        <div class="hstat"><div class="hstat-label">충동 저항</div><div class="hstat-value">${state.counters.impulseResisted}</div><div class="hstat-sub">회</div></div>
+        <div class="hstat"><div class="hstat-label">절약 추정</div><div class="hstat-value">${state.counters.saved.toLocaleString()}</div><div class="hstat-sub">원</div></div>
+      </div>
+    </div>`;
+  document.getElementById('decideCount').textContent = state.counters.decisions + '건';
+}
+
+function renderMissions(){
+  const done = new Set(state.xpLog.map(l => l.source));
+  const missions = [
+    { id:'daily_login', icon:'☀️', bg:'#FAEEDA', title:'일일 출석 체크', xp:10, source:'daily_login' },
+    { id:'try_compare', icon:'⚖️', bg:'#E6F1FB', title:'오늘 중 한 번 비교해보기', xp:30, source:'comparison_done' },
+    { id:'read_guide',  icon:'🛡️', bg:'#E1F5EE', title:'피해대응 가이드 하나 읽기', xp:20, source:'guide_read' }
+  ];
+  document.getElementById('missionList').innerHTML = missions.map(m => {
+    const complete = done.has(m.source);
+    return `<div class="mission ${complete?'done':''}" data-mid="${m.id}">
+      <div class="mission-icon" style="background:${m.bg}">${m.icon}</div>
+      <div class="mission-body">
+        <div class="mission-title">${m.title}</div>
+        <div class="mission-xp">+${m.xp} XP</div>
+      </div>
+      ${complete ?
+        `<svg class="mission-check" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg>` :
+        `<svg class="mission-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>`}
+    </div>`;
+  }).join('');
+  document.querySelectorAll('.mission').forEach(m => {
+    m.addEventListener('click', () => {
+      const id = m.dataset.mid;
+      if(m.classList.contains('done')) return;
+      if(id === 'daily_login'){
+        showToast('오늘은 이미 출석했어요','info');
+      } else if(id === 'try_compare'){
+        switchTab('tools'); setTimeout(openCompare, 250);
+      } else if(id === 'read_guide'){
+        switchTab('damage');
+      }
+    });
+  });
+}
+
+function renderReco(){
+  // 가치관 기반 추천: 가장 높은 가치관 축 기준 메시지 구성
+  const topValues = Object.entries(state.profile.values)
+    .sort((a,b) => b[1]-a[1]).slice(0,2).map(([k]) => k);
+
+  const RECO_TEMPLATES = {
+    price: [
+      { tag:'가격 절약', title:'대형마트 PB 생수 24병', why:'시중 제품 대비 평균 38% 저렴, 품질 차이 미미' },
+      { tag:'가격 절약', title:'구독 정리 체크리스트', why:'안 쓰는 구독 월 평균 3.2개 발견' }
+    ],
+    time: [
+      { tag:'시간 효율', title:'동네 밀키트 정기배송', why:'장보기·요리 시간 주 4시간 단축' },
+      { tag:'시간 효율', title:'가까운 세탁특공대', why:'왕복 이동 시간 제로' }
+    ],
+    quality: [
+      { tag:'품질·내구성', title:'10년 보증 냄비 Top 3', why:'평생 1회 구매로 생애비용 최저' },
+      { tag:'품질·내구성', title:'수선 가능한 브랜드 리스트', why:'한 번 사면 20년 — 환경·지갑 동시' }
+    ],
+    health: [
+      { tag:'건강·안전', title:'무첨가 인증 반찬가게', why:'방부제·감미료 무첨가, 가격 대비 영양가 ↑' },
+      { tag:'건강·안전', title:'유기농 계란 산지직송', why:'동물복지 1등급, 콜레스테롤 ↓' }
+    ],
+    eco: [
+      { tag:'친환경·윤리', title:'제로웨이스트 생활용품', why:'연간 포장 쓰레기 12kg 감소' },
+      { tag:'친환경·윤리', title:'비건 인증 화장품', why:'동물 실험 없음, 성분 투명' }
+    ],
+    experience: [
+      { tag:'경험·가치', title:'로컬 공방 수제품', why:'작가와 직접 교류, 유일한 에디션' },
+      { tag:'경험·가치', title:'동네 서점 독서 모임', why:'책값 대비 만남의 가치 10배' }
+    ]
+  };
+
+  let recos = [];
+  topValues.forEach(v => recos = recos.concat(RECO_TEMPLATES[v] || []));
+  // 관심 품목 반영
+  if(state.profile.interests.includes('식료품') || state.profile.interests.includes('건강식품')){
+    recos.unshift({ tag:'맞춤 추천', title:'삶은계란 품목 비교', why:`"${state.profile.interests[0]}"관심 + 가치관 기준으로 선별` });
+  }
+
+  document.getElementById('recoScroll').innerHTML = recos.slice(0,5).map(r => `
+    <div class="reco-card" onclick="clickReco('${r.title.replace(/'/g,'')}')">
+      <span class="reco-tag">${r.tag}</span>
+      <div class="reco-title">${r.title}</div>
+      <div class="reco-why">${r.why}</div>
+    </div>
+  `).join('');
+}
+
+function clickReco(title){
+  showToast('상세 페이지는 V1에서 — 지금은 데모','info');
+}
+
+function renderLastActivity(){
+  const el = document.getElementById('lastActivity');
+  if(state.xpLog.length === 0){
+    el.innerHTML = `<div class="card-sub">아직 기록이 없어요. 미션을 완료해 보세요.</div>`;
+    return;
+  }
+  const last5 = state.xpLog.slice(0, 5);
+  el.innerHTML = last5.map(l => {
+    const date = new Date(l.at);
+    const time = `${date.getHours()}:${date.getMinutes().toString().padStart(2,'0')}`;
+    return `<div style="padding:8px 0;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:13px;font-weight:500">${l.name}</div>
+        ${l.note ? `<div style="font-size:11px;color:var(--text-sub);margin-top:2px">${l.note}</div>` : ''}
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:12px;font-weight:700;color:var(--primary)">+${l.amount} XP</div>
+        <div style="font-size:10px;color:var(--text-dim)">${time}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   피해대응
+============================================================ */
+function renderDamageCats(){
+  document.getElementById('damageCats').innerHTML = CASE_CATEGORIES.map(c => `
+    <div class="dcat" onclick="openDamage('${c.key}')">
+      <div class="dcat-icon" style="background:${c.bg}">${c.icon}</div>
+      <div class="dcat-title">${c.title}</div>
+      <div class="dcat-sub">${c.sub}</div>
+    </div>
+  `).join('');
+}
+
+function openDamage(key){
+  const c = CASE_CATEGORIES.find(x => x.key === key);
+  if(!c) return;
+  document.getElementById('damageTitle').textContent = c.title;
+
+  // 케이스 상태: 있으면 재사용, 없으면 생성
+  let cs = state.cases.find(x => x.key === key);
+  if(!cs){
+    cs = { key, title: c.title, steps: c.steps.map(s => ({ text:s, done:false })), createdAt: Date.now() };
+    state.cases.push(cs);
+  }
+
+  document.getElementById('damageContent').innerHTML = `
+    <div class="law-box">
+      <div class="law-label">관련 법률</div>
+      <div class="law-text">${c.law}</div>
+    </div>
+    <div class="cmp-label">단계별 대응 — 완료 시 +${XP_RULES.case_step.amount} XP</div>
+    <div class="step-list" id="stepList">
+      ${cs.steps.map((s, i) => `
+        <div class="step ${s.done?'done':''}" data-idx="${i}">
+          <div class="step-num">${i+1}</div>
+          <div class="step-text">${s.text}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="contact-box">
+      <div class="contact-title">지금 바로 연결</div>
+      <div class="contact-btns">
+        <button class="contact-btn" onclick="callContact('${c.phone}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          ${c.phone} 전화
+        </button>
+        <button class="contact-btn" onclick="openContactURL('${c.url}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14L21 3"/></svg>
+          ${c.contact}
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.querySelectorAll('#stepList .step').forEach(step => {
+    step.addEventListener('click', () => {
+      const i = +step.dataset.idx;
+      cs.steps[i].done = !cs.steps[i].done;
+      step.classList.toggle('done');
+      if(cs.steps[i].done){
+        awardXP('case_step');
+        if(cs.steps.every(s => s.done)){
+          addJournal(`"${c.title}" 문제를 끝까지 해결했다. 권리를 아는 것과 행사하는 것은 다른 거였다.`);
+          setTimeout(() => showToast('사건 완료! 잘 대응했어요', 'success'), 600);
+        }
+      }
+    });
+  });
+
+  // 첫 열람 XP
+  if(!state.xpLog.some(l => l.source === 'guide_read' && l.note === c.title)){
+    awardXP('guide_read', c.title);
+    awardBadge('first_damage');
+  }
+
+  document.getElementById('damageDetail').classList.add('open');
+  renderCaseList();
+}
+
+function closeDamage(){ document.getElementById('damageDetail').classList.remove('open'); }
+
+function callContact(phone){
+  showToast(`tel:${phone} 연결 — 실제 앱에서는 즉시 통화`, 'info');
+}
+function openContactURL(url){
+  showToast(`${url} — 데모라 이동 안 함`, 'info');
+}
+
+function renderCaseList(){
+  const el = document.getElementById('caseList');
+  if(!el) return;
+  if(state.cases.length === 0){
+    el.innerHTML = `<div class="card flat" style="padding:14px;text-align:center;color:var(--text-sub);font-size:12px">진행 중인 사건이 없어요</div>`;
+    return;
+  }
+  el.innerHTML = state.cases.map(cs => {
+    const done = cs.steps.filter(s => s.done).length;
+    const total = cs.steps.length;
+    return `<div class="card flat" style="padding:12px 14px;margin-bottom:8px;cursor:pointer" onclick="openDamage('${cs.key}')">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-size:13px;font-weight:600">${cs.title}</div>
+        <div style="font-size:11px;color:${done===total?'var(--success-text)':'var(--text-sub)'};font-weight:600">${done}/${total}</div>
+      </div>
+      <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+        <div style="height:100%;width:${(done/total)*100}%;background:${done===total?'var(--success)':'var(--primary)'};transition:width .3s"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   다속성 비교 도구
+============================================================ */
+let cmpState = null;
+
+function openCompare(){
+  // 사용자 가치관 벡터 → 속성 자동 생성
+  const values = state.profile.values;
+  const attrs = [
+    { key:'price', name:'가격', weight: values.price, auto: values.price >= 6 },
+    { key:'quality', name:'품질', weight: values.quality, auto: values.quality >= 6 },
+    { key:'design', name:'디자인', weight: values.experience, auto: values.experience >= 6 },
+    { key:'as', name:'A/S', weight: values.quality, auto: false },
+    { key:'health', name:'성분·안전', weight: values.health, auto: values.health >= 6 },
+    { key:'eco', name:'친환경', weight: values.eco, auto: values.eco >= 6 }
+  ];
+
+  cmpState = {
+    attrs,
+    products: [
+      { name:'A 브랜드', ratings:{ price:6, quality:9, design:7, as:9, health:5, eco:6 } },
+      { name:'B 브랜드', ratings:{ price:9, quality:6, design:5, as:5, health:6, eco:4 } },
+      { name:'C 브랜드', ratings:{ price:7, quality:8, design:9, as:7, health:8, eco:8 } }
+    ],
+    saved: false
+  };
+  renderCompare();
+  document.getElementById('cmpView').classList.add('open');
+}
+function closeCompare(){ document.getElementById('cmpView').classList.remove('open'); }
+
+function renderCompare(){
+  const c = document.getElementById('cmpContent');
+  c.innerHTML = `
+    <div class="cmp-step">
+      <div class="cmp-label">1. 당신의 가치관 기반 가중치 <span class="cmp-auto-tag">자동 설정됨</span></div>
+      ${cmpState.attrs.map(a => `
+        <div class="cmp-attr">
+          <div class="cmp-attr-head">
+            <span class="cmp-attr-name">${a.name}${a.auto?'<span class="cmp-auto-tag">추천</span>':''}</span>
+            <span class="cmp-attr-w">${a.weight}/10</span>
+          </div>
+          <input type="range" class="value-slider" min="0" max="10" step="1" value="${a.weight}" data-ak="${a.key}">
+        </div>
+      `).join('')}
+    </div>
+    <div class="cmp-step">
+      <div class="cmp-label">2. 제품별 평가 (샘플 데이터)</div>
+      ${cmpState.products.map((p, idx) => `
+        <div class="cmp-prod">
+          <div class="cmp-prod-name">${p.name}</div>
+          ${cmpState.attrs.map(a => `
+            <div class="cmp-rate">
+              <span>${a.name}</span>
+              <input type="range" min="0" max="10" step="1" value="${p.ratings[a.key]}" data-p="${idx}" data-k="${a.key}">
+              <span id="pr-${idx}-${a.key}">${p.ratings[a.key]}</span>
+            </div>
+          `).join('')}
+        </div>
+      `).join('')}
+    </div>
+    <div class="cmp-step">
+      <div class="cmp-label">3. 결과</div>
+      <div id="cmpResult"></div>
+    </div>
+    <button class="btn-primary" onclick="saveComparison()" style="margin-top:16px">이 결정 기록하기 (+50 XP)</button>
+  `;
+
+  c.querySelectorAll('input[data-ak]').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const a = cmpState.attrs.find(x => x.key === inp.dataset.ak);
+      a.weight = +inp.value;
+      const head = inp.closest('.cmp-attr').querySelector('.cmp-attr-w');
+      head.textContent = `${inp.value}/10`;
+      renderCmpResult();
+    });
+  });
+  c.querySelectorAll('input[data-p]').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const p = cmpState.products[+inp.dataset.p];
+      p.ratings[inp.dataset.k] = +inp.value;
+      document.getElementById(`pr-${inp.dataset.p}-${inp.dataset.k}`).textContent = inp.value;
+      renderCmpResult();
+    });
+  });
+  renderCmpResult();
+}
+
+function renderCmpResult(){
+  const scores = cmpState.products.map(p => {
+    const s = cmpState.attrs.reduce((sum, a) => sum + (a.weight * p.ratings[a.key]), 0);
+    return { name: p.name, score: Math.round(s), ratings: p.ratings };
+  });
+  scores.sort((a,b) => b.score - a.score);
+  const max = scores[0].score;
+
+  document.getElementById('cmpResult').innerHTML = scores.map((s, i) => {
+    if(i === 0){
+      return `<div class="cmp-result-card">
+        <div class="cmp-result-head">
+          <span class="name">🏆 ${s.name}</span>
+          <span class="score">${s.score}점</span>
+        </div>
+        ${cmpState.attrs.map(a => `
+          <div class="cmp-result-bar">
+            <span>${a.name}</span>
+            <div class="cmp-result-fill"><div style="width:${s.ratings[a.key]*10}%"></div></div>
+            <span>${s.ratings[a.key]}</span>
+          </div>
+        `).join('')}
+      </div>`;
+    }
+    return `<div class="cmp-loser">
+      <div class="cmp-loser-head">
+        <span class="name">${s.name}</span>
+        <span>${s.score}점 (${Math.round(s.score/max*100)}%)</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function saveComparison(){
+  if(cmpState.saved){ showToast('이미 기록했어요','info'); return; }
+
+  // 결정 기록 모달
+  openDecideModal(cmpState.products.map(p => {
+    const s = cmpState.attrs.reduce((sum, a) => sum + (a.weight * p.ratings[a.key]), 0);
+    return { name: p.name, score: Math.round(s) };
+  }));
+}
+
+let pendingDecision = null;
+function openDecideModal(items){
+  pendingDecision = { items, chosen:null };
+  items.sort((a,b)=>b.score-a.score);
+  document.getElementById('decideList').innerHTML = items.map((it, i) => `
+    <div class="decide-item" data-i="${i}">
+      <div>
+        <div class="decide-name">${it.name}</div>
+        <div class="decide-score">${it.score}점${i===0?' · 최고점':''}</div>
+      </div>
+      <div class="decide-radio"></div>
+    </div>
+  `).join('');
+  document.querySelectorAll('#decideList .decide-item').forEach(el => {
+    el.addEventListener('click', () => {
+      document.querySelectorAll('#decideList .decide-item').forEach(x => x.classList.remove('selected'));
+      el.classList.add('selected');
+      pendingDecision.chosen = items[+el.dataset.i];
+      document.getElementById('decideConfirm').disabled = false;
+    });
+  });
+  document.getElementById('decideConfirm').disabled = true;
+  openModal('modalDecide');
+}
+
+document.addEventListener('click', e => {
+  if(e.target.id === 'decideConfirm'){
+    if(!pendingDecision?.chosen) return;
+    state.counters.comparisons += 1;
+    state.counters.decisions += 1;
+    state.decisions.unshift({
+      chosen: pendingDecision.chosen.name,
+      items: pendingDecision.items.map(i => i.name),
+      score: pendingDecision.chosen.score,
+      at: Date.now(),
+      satisfaction: null
+    });
+
+    awardXP('comparison_done', `비교: ${pendingDecision.items.map(i=>i.name).join(' vs ')}`);
+    awardXP('decision_record', `선택: ${pendingDecision.chosen.name}`);
+    addJournal(`오늘 ${pendingDecision.items.map(i=>i.name).join(', ')}을(를) 비교해 "${pendingDecision.chosen.name}"을(를) 골랐다. 3개월 뒤에 이 선택이 맞았는지 돌아봐야지.`);
+
+    cmpState.saved = true;
+    closeModal('modalDecide');
+    closeCompare();
+    setTimeout(() => showToast('결정 기록 완료!', 'success'), 300);
+  }
+});
+
+/* ============================================================
+   24시간 락
+============================================================ */
+function openLock(){ openModal('modalLock'); }
+
+function confirmLock(){
+  const item = document.getElementById('lockItem').value.trim();
+  const price = +document.getElementById('lockPrice').value;
+  if(!item){ showToast('뭘 사려는지 적어주세요','info'); return; }
+
+  state.locks.push({ item, price, at: Date.now(), status:'locked' });
+
+  // 넛지 어록 발동
+  closeModal('modalLock');
+  document.getElementById('lockItem').value = '';
+  document.getElementById('lockPrice').value = '';
+  setTimeout(() => showNudge(item, price), 250);
+}
+
+function showNudge(item, price){
+  const q = NUDGE_QUOTES[Math.floor(Math.random()*NUDGE_QUOTES.length)];
+  document.getElementById('nudgeQuote').innerHTML = `"${q.q.replace(/\n/g,'<br>')}"`;
+  document.getElementById('nudgeSource').textContent = q.s;
+  pendingNudge = { item, price };
+  openModal('modalNudge');
+}
+
+let pendingNudge = null;
+function handleNudge(choice){
+  closeModal('modalNudge');
+  if(!pendingNudge) return;
+  const { item, price } = pendingNudge;
+
+  if(choice === 'skip'){
+    state.counters.impulseResisted += 1;
+    state.counters.saved += price || 0;
+    awardXP('impulse_resist', `"${item}" 안 사기로 결정`);
+    addJournal(`"${item}"(${price ? price.toLocaleString()+'원 ' : ''}) 사려다가 참았다. 어록 하나가 생각을 흔들었다.`);
+  } else if(choice === 'hold'){
+    showToast('24시간 후 알림으로 다시 물어볼게요','success');
+    addJournal(`"${item}" 24시간 락에 걸었다. 내일 이 시간에 다시 볼 수 있을까.`);
+    awardXP('impulse_resist', `"${item}" 24시간 보류`);
+    state.counters.impulseResisted += 1;
+  } else if(choice === 'buy'){
+    addJournal(`"${item}" 어록을 보고도 결국 샀다. 이게 진짜 필요한 소비였는지는 한 달 뒤에 알게 될 것이다.`);
+    showToast('구매 기록 저장 — 사후 만족도 체크 예정', 'info');
+  }
+  pendingNudge = null;
+  renderAll();
+}
+
+/* ============================================================
+   AI 상담
+============================================================ */
+const AI_PROMPTS = [
+  '충동구매 참는 법 알려줘',
+  '구독 정리하고 싶어',
+  '이 가치관 설정 맞나?',
+  '가치 있는 소비가 뭔데?',
+  '70건 결정 뭔 말이야?'
+];
+
+const AI_RESPONSES = {
+  '충동구매 참는 법 알려줘': (s) => {
+    const top = Object.entries(s.profile.values).sort((a,b)=>b[1]-a[1])[0];
+    const topName = VALUE_AXES.find(v => v.key === top[0]).name;
+    return `24시간 룰부터 써보세요. 장바구니에 담고 내일 다시 봤을 때도 사고 싶다면 그건 진짜 필요한 것일 확률이 높아요.\n\n${s.profile.charName}님은 "${topName}"을(를) 가장 중요하게 생각하시니까, 구매 직전에 이 한 질문만 하세요:\n"이 지출이 내가 제일 중요하게 생각하는 걸 실제로 채워주나?"\n\n대부분 "아니" 답 나올 거예요.`;
+  },
+  '구독 정리하고 싶어': (s) =>
+    `카드 명세서 3개월치를 열어 반복결제를 모두 적어보세요. 각 서비스마다 "최근 30일간 5회 이상 썼는가?"로 걸러내면 대부분 해지 대상입니다.\n\n해지 경로가 의도적으로 어려운 경우(다크패턴)는 공정위 1357에 신고 가능해요. 이 앱 피해대응 탭 > "구독 해지 불가" 가이드에 단계별로 정리돼 있어요.`,
+  '이 가치관 설정 맞나?': (s) => {
+    const sorted = Object.entries(s.profile.values).sort((a,b)=>b[1]-a[1]);
+    const top = sorted.slice(0,2).map(([k]) => VALUE_AXES.find(v=>v.key===k).name).join(', ');
+    const bot = sorted.slice(-2).map(([k]) => VALUE_AXES.find(v=>v.key===k).name).join(', ');
+    return `현재 설정에서 가장 중요한 건 "${top}"이고, 덜 중요한 건 "${bot}"이에요.\n\n분기마다 한 번씩 재설정하는 걸 추천해요. 삶의 단계에 따라 우선순위는 자연스럽게 바뀌거든요. 결혼·이사·취업·건강 변화가 있었다면 지금 다시 설문해보세요.\n\n나의 거지 > 설정 > 가치관 재설정에서 가능합니다.`;
+  },
+  '가치 있는 소비가 뭔데?': (s) =>
+    `합리적 소비 = 절약이 아니에요. 그게 이 앱의 핵심 메시지입니다.\n\n경제학에서 합리적 소비란 "본인 효용 극대화"예요. 10만원짜리 공연을 보는 것도, 친환경 제품에 20% 더 쓰는 것도, 본인 가치관에 맞다면 완전히 합리적 선택이에요.\n\n이 앱은 "안 사는 선택"과 "가치 있게 쓰는 선택" 둘 다에 같은 XP를 줘요. 지출 자체가 나쁜 게 아니라, 가치관과 어긋난 지출이 문제인 거죠.`,
+  '70건 결정 뭔 말이야?': (s) =>
+    `하루 평균 소비 관련 의사결정 수예요. 점심 뭐 먹지, 커피 사먹을까 말까, 이 앱 구독할까, 택시 탈까 버스 탈까 — 다 포함하면 70건쯤 됩니다.\n\n이걸 매번 System 2(느리고 의식적인 사고)로 처리하면 사람은 지쳐요(decision fatigue). 그래서 이 앱의 진짜 목표는 "매번 신중하게 생각하세요"가 아니라, 합리적 선택이 직관(System 1)이 될 때까지 반복 훈련시키는 것이에요.\n\n지금 ${s.profile.charName}님이 Lv.${s.character.level}인 것도 그 훈련의 누적 결과입니다.`
+};
+
+function openAI(){
+  document.getElementById('aiSub').textContent =
+    `${state.profile.charName}(Lv.${state.character.level}) · 당신의 가치관 반영`;
+  const body = document.getElementById('aiBody');
+  if(body.children.length === 0){
+    const greet = `안녕하세요, ${state.profile.charName}님. 지금까지 ${state.counters.decisions}건의 선택을 함께했네요. 무엇이든 물어보세요.`;
+    body.innerHTML = `<div class="ai-msg bot">${greet}</div>`;
+  }
+  document.getElementById('aiPrompts').innerHTML = AI_PROMPTS.map(p =>
+    `<button class="ai-prompt" data-q="${p}">${p}</button>`).join('');
+  document.querySelectorAll('.ai-prompt').forEach(b =>
+    b.addEventListener('click', () => askAI(b.dataset.q)));
+  openModal('modalAI');
+}
+
+function askAI(q){
+  const body = document.getElementById('aiBody');
+  body.innerHTML += `<div class="ai-msg user">${q}</div>`;
+  body.scrollTop = body.scrollHeight;
+
+  const typing = document.createElement('div');
+  typing.className = 'ai-msg bot typing';
+  typing.innerHTML = '<span></span><span></span><span></span>';
+  body.appendChild(typing);
+  body.scrollTop = body.scrollHeight;
+
+  setTimeout(() => {
+    typing.remove();
+    const reply = AI_RESPONSES[q] ? AI_RESPONSES[q](state) :
+      '좋은 질문이에요. 데모에서는 이 질문에 미리 준비된 답이 없지만, 실제 앱에서는 Claude API로 맞춤 답변을 드려요.';
+    body.innerHTML += `<div class="ai-msg bot">${reply.replace(/\n/g,'<br>')}</div>`;
+    body.scrollTop = body.scrollHeight;
+    awardXP('ai_chat', q);
+  }, 700 + Math.random()*500);
+}
+
+/* ============================================================
+   나의 거지
+============================================================ */
+function renderMeHero(){
+  const stage = STAGES[state.character.level-1];
+  const next = STAGES[state.character.level] || null;
+  const curMin = stage.threshold;
+  const nextMin = next ? next.threshold : curMin + 1000;
+  const pct = Math.min(100, Math.max(0, ((state.character.xp - curMin)/(nextMin - curMin))*100));
+
+  document.getElementById('meHero').innerHTML = `
+    <div class="me-hero">
+      <div class="me-avatar-big">${avatarSVG(state.character.level, 1.4)}</div>
+      <div class="me-name">${state.profile.charName}</div>
+      <div class="me-stage">Lv.${state.character.level} · ${stage.name}</div>
+      <div class="me-xp-bar"><div style="width:${pct}%"></div></div>
+      <div class="me-xp-text">${state.character.xp} XP${next?` · 다음 ${next.name}까지 ${nextMin - state.character.xp}`:''}</div>
+    </div>`;
+}
+
+let currentMeTab = 'journal';
+function renderMeContent(tab){
+  currentMeTab = tab;
+  const el = document.getElementById('meContent');
+  if(tab === 'journal'){
+    if(state.journal.length === 0){
+      el.innerHTML = `<div class="card flat" style="margin:0 16px;padding:20px;text-align:center;color:var(--text-sub);font-size:13px">아직 일기가 없어요.<br>활동하면 자동으로 기록돼요.</div>`;
+    } else {
+      el.innerHTML = state.journal.slice(0,15).map(j => {
+        const date = new Date(j.at);
+        const dateStr = `${date.getMonth()+1}월 ${date.getDate()}일 · ${date.getHours()}:${date.getMinutes().toString().padStart(2,'0')}`;
+        return `<div class="journal-entry">
+          <div class="journal-date">${dateStr}${j.kind === 'levelup' ? ' · 레벨업' : ''}</div>
+          <div class="journal-text">"${j.text}"</div>
+        </div>`;
+      }).join('');
+    }
+  } else if(tab === 'badges'){
+    el.innerHTML = `<div class="badge-grid">` +
+      BADGES.map(b => `
+        <div class="badge ${state.badges.has(b.id)?'earned':''}">
+          <div class="badge-icon">${b.icon}</div>
+          <div class="badge-name">${b.name}</div>
+          <div class="badge-desc">${b.desc}</div>
+        </div>
+      `).join('') + `</div>`;
+  } else if(tab === 'stats'){
+    const valueTops = Object.entries(state.profile.values)
+      .sort((a,b)=>b[1]-a[1]).slice(0,3)
+      .map(([k,v]) => VALUE_AXES.find(a => a.key === k).name + ` ${v}`);
+    el.innerHTML = `
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="stat-num">${state.counters.decisions}</div>
+          <div class="stat-lbl">총 합리적 선택</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">${state.character.xp}</div>
+          <div class="stat-lbl">누적 XP</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">${state.counters.impulseResisted}</div>
+          <div class="stat-lbl">충동 저항</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">${state.counters.saved.toLocaleString()}</div>
+          <div class="stat-lbl">절약 추정액 (원)</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">${state.badges.size}</div>
+          <div class="stat-lbl">획득 업적</div>
+          <div class="stat-delta up">/ ${BADGES.length}</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">${state.cases.length}</div>
+          <div class="stat-lbl">대응 사건</div>
+        </div>
+      </div>
+      <div class="card" style="margin:14px 16px">
+        <div class="card-title">내 가치관 Top 3</div>
+        <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
+          ${valueTops.map((t,i) => `<div style="display:flex;align-items:center;gap:8px;font-size:13px">
+            <span style="width:18px;height:18px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${i+1}</span>
+            ${t}
+          </div>`).join('')}
+        </div>
+        <div style="font-size:11px;color:var(--text-sub);margin-top:12px;line-height:1.5">
+          이 값이 앱 전체의 추천·비교 기본값을 결정해요. 분기마다 재설정을 권장합니다.
+        </div>
+      </div>`;
+  }
+}
+
+/* ============================================================
+   SOS
+============================================================ */
+function triggerSOS(){ openModal('modalSOS'); }
+function sosAction(kind){
+  closeModal('modalSOS');
+  if(kind === 'scam'){ showToast('112 연결 — 실제 앱에서는 즉시', 'info'); switchTab('damage'); setTimeout(()=>openDamage('scam'), 400); }
+  else if(kind === 'hack'){ showToast('118 연결 — 실제 앱에서는 즉시', 'info'); switchTab('damage'); setTimeout(()=>openDamage('privacy'), 400); }
+  else { showToast('1372 연결 — 실제 앱에서는 즉시', 'info'); switchTab('damage'); }
+}
+
+/* ============================================================
+   모달 공통
+============================================================ */
+function openModal(id){
+  const m = document.getElementById(id);
+  m.classList.add('open');
+  m.addEventListener('click', modalBgClick);
+}
+function closeModal(id){
+  const m = document.getElementById(id);
+  m.classList.remove('open');
+  m.removeEventListener('click', modalBgClick);
+}
+function modalBgClick(e){
+  if(e.target === e.currentTarget) closeModal(e.currentTarget.id);
+}
+
+/* ============================================================
+   토스트
+============================================================ */
+let toastTimer;
+function showToast(msg, type){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show';
+  if(type) t.classList.add(type);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ============================================================
+   소비 DNA 리포트
+============================================================ */
+function openDNAReport(){
+  const content = document.getElementById('dnaContent');
+  const values = state.profile.values;
+
+  const totalV = Object.values(values).reduce((s,v) => s+v, 0) || 1;
+  const expected = {};
+  Object.keys(values).forEach(k => expected[k] = Math.round((values[k] / totalV) * 100));
+
+  const actualBase = {};
+  Object.keys(values).forEach(k => actualBase[k] = 0);
+
+  const contribs = {
+    impulse_resist: { price: 3, time: 0, quality: 1, health: 0, eco: 1, experience: 0 },
+    comparison_done: { price: 2, quality: 2, health: 1, eco: 1, experience: 1, time: 1 },
+    decision_record: { price: 1, quality: 2, design: 1, health: 1, eco: 1, experience: 2 },
+    value_purchase: { health: 2, eco: 2, experience: 3, quality: 1, price: 0, time: 0 },
+    guide_read: { price: 1, quality: 1 },
+    case_step: { price: 2 },
+    ai_chat: { experience: 1, quality: 1 }
+  };
+
+  let sum = 0;
+  state.xpLog.forEach(log => {
+    const cntr = contribs[log.source];
+    if(!cntr) return;
+    Object.keys(cntr).forEach(k => {
+      if(actualBase[k] !== undefined){
+        actualBase[k] += cntr[k];
+        sum += cntr[k];
+      }
+    });
+  });
+  if(sum === 0){
+    Object.keys(values).forEach(k => actualBase[k] = values[k]);
+    sum = totalV;
+  }
+  const actual = {};
+  Object.keys(actualBase).forEach(k => actual[k] = Math.round((actualBase[k] / sum) * 100));
+
+  let totalDiff = 0;
+  Object.keys(values).forEach(k => totalDiff += Math.abs(expected[k] - actual[k]));
+  const matchScore = Math.max(0, Math.round(100 - totalDiff / 2));
+
+  const gaps = Object.keys(values).map(k => ({
+    key: k,
+    name: VALUE_AXES.find(v => v.key === k).name,
+    expected: expected[k],
+    actual: actual[k],
+    gap: actual[k] - expected[k]
+  }));
+  const gapTop = gaps.slice().sort((a,b) => Math.abs(b.gap) - Math.abs(a.gap))[0];
+
+  let insightTxt;
+  if(state.xpLog.length < 3){
+    insightTxt = '아직 데이터가 부족해요. 비교·피해대응·미션을 몇 번 더 해보면 당신의 실제 패턴이 보여요.';
+  } else if(matchScore >= 80){
+    insightTxt = `<b>거의 완벽해요.</b> 설정한 가치관과 실제 행동이 ${matchScore}% 일치. 직관(System 1)이 잘 훈련되고 있다는 뜻이에요.`;
+  } else if(gapTop.gap > 8){
+    insightTxt = `설정보다 <b>"${gapTop.name}"</b>에 실제로 더 많이 투자하고 있어요. 가치관 설정을 실제 행동에 맞게 업데이트해볼까요?`;
+  } else if(gapTop.gap < -8){
+    insightTxt = `<b>"${gapTop.name}"</b>을(를) 중요하다고 했지만 실제 결정엔 덜 반영되고 있어요. 다음 비교에서 이 속성 가중치를 높여보세요.`;
+  } else {
+    insightTxt = `설정과 행동이 ${matchScore}% 일치. 편차가 크진 않지만 조금씩 훈련의 여지가 있어요.`;
+  }
+
+  const patterns = [];
+  if(state.counters.impulseResisted >= 3){
+    patterns.push({ ico:'🧘', title:'충동 저항의 달인', desc:`${state.counters.impulseResisted}회 충동을 참았어요. 평균보다 높은 수치입니다.` });
+  }
+  if(state.counters.comparisons >= 3){
+    patterns.push({ ico:'⚖️', title:'비교를 습관화함', desc:`${state.counters.comparisons}번의 비교 — System 2의 숙련도가 올라가는 중.` });
+  }
+  if(state.decisions.length > 0){
+    patterns.push({ ico:'📝', title:'결정을 기록하는 사람', desc:`${state.decisions.length}건의 결정을 남겼어요. 이게 미래의 직관을 만듭니다.` });
+  }
+  if(state.cases.length > 0){
+    const doneAll = state.cases.filter(c => c.steps.every(s => s.done)).length;
+    if(doneAll > 0) patterns.push({ ico:'🛡️', title:'권리를 행사하는 사람', desc:`${doneAll}건의 피해 대응을 끝까지 완수.` });
+  }
+  if(patterns.length === 0){
+    patterns.push({ ico:'🌱', title:'시작 단계', desc:'데이터가 쌓이면 당신만의 소비 패턴을 찾아드려요. 미션부터 해보세요.' });
+  }
+
+  content.innerHTML = `
+    <div class="dna-hero">
+      <div class="dna-match-label">가치관 vs 실제 소비 일치도</div>
+      <div class="dna-match">${matchScore}%</div>
+      <div class="dna-sub">이 수치가 100%에 가까울수록<br>합리적 선택이 당신의 직관이 되고 있다는 뜻이에요.</div>
+    </div>
+
+    <div class="dna-section-title">축별 분포</div>
+    ${gaps.map(g => `
+      <div class="dna-bar-row">
+        <div class="name">${g.name}</div>
+        <div class="dna-bar-stack">
+          <div class="dna-bar-expect" style="width:${Math.max(g.expected, g.actual)}%"></div>
+          <div class="dna-bar-actual" style="width:${g.actual}%">${g.actual}%</div>
+          ${Math.abs(g.gap) > 3 ? `<div class="dna-bar-gap">${g.gap > 0 ? '+' : ''}${g.gap}</div>` : ''}
+        </div>
+      </div>
+    `).join('')}
+    <div style="font-size:10px;color:var(--text-dim);margin-top:6px;display:flex;gap:12px">
+      <span>● 실제 행동</span>
+      <span>○ 설정한 가치관</span>
+    </div>
+
+    <div class="dna-insight">${insightTxt}</div>
+
+    <div class="dna-section-title">당신의 패턴</div>
+    ${patterns.map(p => `
+      <div class="dna-pattern">
+        <div class="ico">${p.ico}</div>
+        <div class="body">
+          <div class="title">${p.title}</div>
+          <div class="desc">${p.desc}</div>
+        </div>
+      </div>
+    `).join('')}
+
+    <div style="padding:12px 0 20px">
+      <button class="btn-primary" onclick="claimDNAReport()">리포트 수령 (+40 XP)</button>
+    </div>
+  `;
+
+  openModal('modalDNA');
+}
+
+function claimDNAReport(){
+  const lastClaim = state.dnaLastClaim || 0;
+  const now = Date.now();
+  if(now - lastClaim < 7 * 24 * 3600 * 1000 && lastClaim > 0){
+    showToast('주 1회만 수령 가능해요', 'info');
+    return;
+  }
+  state.dnaLastClaim = now;
+  awardXP('dna_report');
+  addJournal('오늘 소비 DNA 리포트를 받았다. 숫자로 보니 내가 어떤 사람인지 조금 더 또렷해졌다.');
+  closeModal('modalDNA');
+  setTimeout(() => showToast('리포트 수령! +40 XP', 'success'), 300);
+}
+
+/* ============================================================
+   후회 로그 — 결정을 돌아보기
+============================================================ */
+function openRegretLog(){
+  const content = document.getElementById('regretContent');
+  const reviewable = state.decisions.filter(d => {
+    if(d.satisfaction !== null && d.satisfaction !== undefined) return true;
+    return (Date.now() - d.at) >= 60 * 1000;
+  });
+
+  if(state.decisions.length === 0){
+    content.innerHTML = `
+      <div class="regret-empty">
+        <b>아직 기록된 결정이 없어요</b>
+        도구 > 다속성 비교를 해보세요.<br>
+        결정을 기록하면 여기서 돌아볼 수 있어요.
+      </div>`;
+    openModal('modalRegret');
+    return;
+  }
+
+  const rated = state.decisions.filter(d => d.satisfaction !== null && d.satisfaction !== undefined);
+  const goodCount = rated.filter(d => d.satisfaction === 'good').length;
+  const badCount = rated.filter(d => d.satisfaction === 'bad').length;
+
+  content.innerHTML = `
+    <div class="regret-summary">
+      <div class="regret-sbox">
+        <div class="regret-snum">${state.decisions.length}</div>
+        <div class="regret-slbl">총 결정</div>
+      </div>
+      <div class="regret-sbox" style="background:var(--success-bg)">
+        <div class="regret-snum" style="color:var(--success-text)">${goodCount}</div>
+        <div class="regret-slbl" style="color:var(--success-text)">만족</div>
+      </div>
+      <div class="regret-sbox" style="background:var(--danger-bg)">
+        <div class="regret-snum" style="color:var(--danger-text)">${badCount}</div>
+        <div class="regret-slbl" style="color:var(--danger-text)">후회</div>
+      </div>
+    </div>
+
+    <div class="dna-insight" style="background:var(--primary-bg);color:var(--primary-text);margin-bottom:14px">
+      <b>왜 돌아봐야 하나요?</b><br>
+      연구에 따르면 자기 선택의 사후 만족도를 기록하는 사람은 3개월 내 같은 실수를 ${rated.length > 0 ? '60% 덜' : '덜'} 반복합니다. 이 데이터가 미래의 직관이 돼요.
+    </div>
+
+    ${state.decisions.map((d, idx) => {
+      const daysAgo = Math.max(0, Math.floor((Date.now() - d.at) / (24 * 3600 * 1000)));
+      const dateStr = daysAgo === 0 ? '오늘' : daysAgo === 1 ? '어제' : `${daysAgo}일 전`;
+      const rated = d.satisfaction !== null && d.satisfaction !== undefined;
+
+      if(rated){
+        const msg = d.satisfaction === 'good' ?
+          '"이 결정, 그때도 옳았다."' :
+          '"다음엔 다르게 결정해보자."';
+        return `
+          <div class="regret-item">
+            <div class="regret-head">
+              <div class="regret-choice">${d.chosen}</div>
+              <div class="regret-date">${dateStr}</div>
+            </div>
+            <div class="regret-ctx">${d.items.join(', ')} 중 선택 · ${d.score}점</div>
+            <div class="regret-rated ${d.satisfaction}">${msg}</div>
+          </div>`;
+      }
+
+      return `
+        <div class="regret-item">
+          <div class="regret-head">
+            <div class="regret-choice">${d.chosen}</div>
+            <div class="regret-date">${dateStr}</div>
+          </div>
+          <div class="regret-ctx">${d.items.join(', ')} 중 선택 · ${d.score}점</div>
+          <div class="regret-q">그 결정, 지금 돌아보면 어떠세요?</div>
+          <div class="regret-rate">
+            <button class="regret-rate-btn" onclick="rateDecision(${idx}, 'good')">👍 만족해요</button>
+            <button class="regret-rate-btn" onclick="rateDecision(${idx}, 'bad')">👎 후회돼요</button>
+          </div>
+        </div>`;
+    }).join('')}
+  `;
+
+  openModal('modalRegret');
+}
+
+function rateDecision(idx, val){
+  if(!state.decisions[idx]) return;
+  state.decisions[idx].satisfaction = val;
+  state.decisions[idx].ratedAt = Date.now();
+  awardXP('regret_review', `"${state.decisions[idx].chosen}" 돌아보기`);
+
+  if(val === 'good'){
+    addJournal(`"${state.decisions[idx].chosen}" 선택을 돌아봤다. 그때도 옳았다. 내 직관을 믿어도 되겠다.`);
+  } else {
+    addJournal(`"${state.decisions[idx].chosen}" 선택은 후회된다. 다음번엔 가중치를 다르게 줘야겠다. 이게 배움이다.`);
+  }
+
+  openRegretLog();
+}
+
+/* 글로벌에 노출 */
+window.openDamage = openDamage;
+window.closeDamage = closeDamage;
+window.openCompare = openCompare;
+window.closeCompare = closeCompare;
+window.openLock = openLock;
+window.confirmLock = confirmLock;
+window.handleNudge = handleNudge;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.clickReco = clickReco;
+window.callContact = callContact;
+window.openContactURL = openContactURL;
+window.triggerSOS = triggerSOS;
+window.sosAction = sosAction;
+window.saveComparison = saveComparison;
+window.showToast = showToast;
+window.openDNAReport = openDNAReport;
+window.claimDNAReport = claimDNAReport;
+window.openRegretLog = openRegretLog;
+window.rateDecision = rateDecision;
+</script>
+</body>
+</html>
